@@ -2,29 +2,32 @@ import { useState, useCallback } from 'react'
 import FileUpload from './components/FileUpload'
 import ErrorInput from './components/ErrorInput'
 import ErrorStack from './components/ErrorStack'
+import SourceMapSelector from './components/SourceMapSelector'
 import { parseSourceMap } from './utils/sourcemapParser'
 
 function App() {
-  const [sourceMap, setSourceMap] = useState(null)
+  const [sourceMaps, setSourceMaps] = useState([])
+  const [selectedMapIndex, setSelectedMapIndex] = useState(0)
   const [errorInfo, setErrorInfo] = useState('')
   const [parsedStack, setParsedStack] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
   const handleFileUpload = useCallback((file) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const content = JSON.parse(e.target.result)
-        setSourceMap(content)
-      } catch (error) {
-        alert('文件格式错误，请上传有效的 JSON 格式的 sourcemap 文件')
-      }
-    }
-    reader.readAsText(file)
+    // 单个文件上传
+    setSourceMaps([file])
+    setSelectedMapIndex(0)
+    setParsedStack(null)
+  }, [])
+
+  const handleMultipleFiles = useCallback((files) => {
+    // 多个文件上传
+    setSourceMaps(files)
+    setSelectedMapIndex(0)
+    setParsedStack(null)
   }, [])
 
   const handleParse = useCallback(async () => {
-    if (!sourceMap) {
+    if (!sourceMaps || sourceMaps.length === 0) {
       alert('请先上传 sourcemap 文件')
       return
     }
@@ -33,9 +36,15 @@ function App() {
       return
     }
 
+    const selectedMap = sourceMaps[selectedMapIndex]
+    if (!selectedMap || !selectedMap.content) {
+      alert('请选择有效的 sourcemap 文件')
+      return
+    }
+
     setIsProcessing(true)
     try {
-      const result = await parseSourceMap(sourceMap, errorInfo)
+      const result = await parseSourceMap(selectedMap.content, errorInfo)
       setParsedStack(result)
     } catch (error) {
       alert('解析失败: ' + error.message)
@@ -43,7 +52,7 @@ function App() {
     } finally {
       setIsProcessing(false)
     }
-  }, [sourceMap, errorInfo])
+  }, [sourceMaps, selectedMapIndex, errorInfo])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -62,12 +71,22 @@ function App() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
               1. 上传 SourceMap 文件
             </h2>
-            <FileUpload onFileUpload={handleFileUpload} />
-            {sourceMap && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm text-green-800">
-                  ✓ SourceMap 文件已加载
-                </p>
+            <FileUpload 
+              onFileUpload={handleFileUpload} 
+              onMultipleFiles={handleMultipleFiles}
+            />
+            {sourceMaps.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-800">
+                    ✓ 已加载 {sourceMaps.length} 个 SourceMap 文件
+                  </p>
+                </div>
+                <SourceMapSelector
+                  sourceMaps={sourceMaps}
+                  selectedIndex={selectedMapIndex}
+                  onSelect={setSelectedMapIndex}
+                />
               </div>
             )}
           </div>
@@ -83,7 +102,7 @@ function App() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <button
             onClick={handleParse}
-            disabled={isProcessing || !sourceMap || !errorInfo.trim()}
+            disabled={isProcessing || sourceMaps.length === 0 || !errorInfo.trim()}
             className="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {isProcessing ? '解析中...' : '解析错误栈'}
