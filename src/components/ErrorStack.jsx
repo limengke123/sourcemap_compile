@@ -32,12 +32,21 @@ function ErrorStack({ stack }) {
           
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">原始位置:</span>
-                <span className="ml-2 font-mono text-gray-800">
-                  {item.originalLine}:{item.originalColumn}
-                </span>
-              </div>
+              {item.originalLine !== null && item.originalColumn !== null ? (
+                <div>
+                  <span className="text-gray-500">原始位置:</span>
+                  <span className="ml-2 font-mono text-gray-800">
+                    {item.originalLine}:{item.originalColumn}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-gray-500">原始位置:</span>
+                  <span className="ml-2 font-mono text-gray-500 italic">
+                    未找到映射
+                  </span>
+                </div>
+              )}
               {item.line && item.column && (
                 <div>
                   <span className="text-gray-500">编译后位置:</span>

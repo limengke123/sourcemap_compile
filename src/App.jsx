@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import FileUpload from './components/FileUpload'
 import ErrorInput from './components/ErrorInput'
 import ErrorStack from './components/ErrorStack'
+import ErrorMessage from './components/ErrorMessage'
 import SourceMapSelector from './components/SourceMapSelector'
 import { parseSourceMap } from './utils/sourcemapParser'
 
@@ -11,6 +12,7 @@ function App() {
   const [errorInfo, setErrorInfo] = useState('')
   const [parsedStack, setParsedStack] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   const handleFileUpload = useCallback((file) => {
     // 单个文件上传
@@ -27,27 +29,40 @@ function App() {
   }, [])
 
   const handleParse = useCallback(async () => {
+    // 清除之前的错误信息
+    setErrorMessage(null)
+
     if (!sourceMaps || sourceMaps.length === 0) {
-      alert('请先上传 sourcemap 文件')
+      setErrorMessage('请先上传 sourcemap 文件')
       return
     }
     if (!errorInfo.trim()) {
-      alert('请输入错误信息')
+      setErrorMessage('请输入错误信息')
       return
     }
 
     const selectedMap = sourceMaps[selectedMapIndex]
     if (!selectedMap || !selectedMap.content) {
-      alert('请选择有效的 sourcemap 文件')
+      setErrorMessage('请选择有效的 sourcemap 文件')
       return
     }
 
     setIsProcessing(true)
     try {
-      const result = await parseSourceMap(selectedMap.content, errorInfo)
+      const result = await parseSourceMap(selectedMap.content, errorInfo, sourceMaps)
       setParsedStack(result)
+      setErrorMessage(null) // 清除错误信息
     } catch (error) {
-      alert('解析失败: ' + error.message)
+      console.error('解析失败:', error)
+      const errorMsg = error.message || '未知错误'
+      // 如果错误信息很长，截断并提示查看控制台
+      if (errorMsg.length > 1000) {
+        setErrorMessage(
+          errorMsg.substring(0, 1000) + '\n\n...（完整错误信息请查看浏览器控制台 F12）'
+        )
+      } else {
+        setErrorMessage(errorMsg)
+      }
       setParsedStack(null)
     } finally {
       setIsProcessing(false)
@@ -56,6 +71,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <ErrorMessage 
+        message={errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+      />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <header className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
