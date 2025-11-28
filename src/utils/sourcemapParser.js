@@ -1,407 +1,360 @@
-import { SourceMapConsumer } from 'source-map-js'
-
-/**
- * 解析错误堆栈中的位置信息
- * 支持格式：
- * - at functionName (file.js:line:column)
- * - at Object.functionName (file.js:line:column)
- * - at http://example.com/file.js:line:column
- * - file.js:line:column
- */
-function parseStackLine(line) {
-  // 移除前后空白
-  const trimmedLine = line.trim()
-  if (!trimmedLine) return null
-
-  const patterns = [
-    // at functionName (file.js:line:column) - 最常用格式
-    {
-      regex: /at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/,
-      handler: (match) => ({
-        functionName: match[1].trim(),
-        source: match[2].trim(),
-        line: parseInt(match[3], 10),
-        column: parseInt(match[4], 10),
-      })
-    },
-    // at Object.functionName (file.js:line:column)
-    {
-      regex: /at\s+([^\s]+)\s+\((.+?):(\d+):(\d+)\)/,
-      handler: (match) => ({
-        functionName: match[1].trim(),
-        source: match[2].trim(),
-        line: parseInt(match[3], 10),
-        column: parseInt(match[4], 10),
-      })
-    },
-    // at file.js:line:column (没有函数名)
-    {
-      regex: /at\s+(.+?):(\d+):(\d+)/,
-      handler: (match) => ({
-        functionName: null,
-        source: match[1].trim(),
-        line: parseInt(match[2], 10),
-        column: parseInt(match[3], 10),
-      })
-    },
-    // file.js:line:column (没有 at 前缀)
-    {
-      regex: /^(.+?):(\d+):(\d+)$/,
-      handler: (match) => ({
-        functionName: null,
-        source: match[1].trim(),
-        line: parseInt(match[2], 10),
-        column: parseInt(match[3], 10),
-      })
-    },
-    // 带行号但没有列号: file.js:line
-    {
-      regex: /^(.+?):(\d+)$/,
-      handler: (match) => ({
-        functionName: null,
-        source: match[1].trim(),
-        line: parseInt(match[2], 10),
-        column: 0, // 默认列号为 0
-      })
-    },
-    // at functionName (file.js:line) - 没有列号
-    {
-      regex: /at\s+(.+?)\s+\((.+?):(\d+)\)/,
-      handler: (match) => ({
-        functionName: match[1].trim(),
-        source: match[2].trim(),
-        line: parseInt(match[3], 10),
-        column: 0, // 默认列号为 0
-      })
-    },
-  ]
-
-  for (const { regex, handler } of patterns) {
-    const match = trimmedLine.match(regex)
-    if (match) {
-      try {
-        const result = handler(match)
-        if (result && !isNaN(result.line) && result.line > 0) {
-          return result
-        }
-      } catch (e) {
-        console.warn('解析匹配结果失败:', e, match)
-      }
-    }
-  }
-
-  return null
-}
+import { SourceMapConsumer } from 'source-map'
 
 /**
  * 解析 JSON 格式的错误堆栈
- * 格式: [{"filename":"file.js","function":"fn","lineno":1,"colno":100}, ...]
  */
 function parseJSONStack(errorInfo) {
   try {
-    // 尝试解析为 JSON
     const trimmed = errorInfo.trim()
-    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-      const parsed = JSON.parse(trimmed)
-      // 如果是数组
-      if (Array.isArray(parsed)) {
-        return parsed.map((item, index) => {
-          if (item.filename && (item.lineno !== undefined || item.line !== undefined)) {
-            return {
-              functionName: item.function || item.functionName || null,
-              source: item.filename,
-              line: item.lineno || item.line || 0,
-              column: item.colno || item.column || 0,
-              isJSON: true,
-            }
-          }
-          return null
-        }).filter(Boolean)
-      }
-      // 如果是单个对象
-      if (parsed.filename && (parsed.lineno !== undefined || parsed.line !== undefined)) {
-        return [{
-          functionName: parsed.function || parsed.functionName || null,
-          source: parsed.filename,
-          line: parsed.lineno || parsed.line || 0,
-          column: parsed.colno || parsed.column || 0,
-          isJSON: true,
-        }]
-      }
+    if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) {
+      return null
     }
+    
+    const parsed = JSON.parse(trimmed)
+    
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => ({
+        filename: item.filename || item.source || '',
+        function: item.function || item.functionName || null,
+        line: item.lineno || item.line || 0,
+        column: item.colno || item.column || 0,
+      })).filter(item => item.filename && item.line > 0)
+    }
+    
+    if (parsed.filename && (parsed.lineno || parsed.line)) {
+      return [{
+        filename: parsed.filename || parsed.source || '',
+        function: parsed.function || parsed.functionName || null,
+        line: parsed.lineno || parsed.line || 0,
+        column: parsed.colno || parsed.column || 0,
+      }]
+    }
+    
+    return null
   } catch (e) {
-    // 不是 JSON 格式，返回 null
     return null
   }
-  return null
 }
 
 /**
- * 根据文件名匹配 sourcemap
- * 尝试从文件名中提取基础名称来匹配
+ * 解析文本格式的错误堆栈
  */
-function matchSourceMapByFilename(filename, sourceMapData) {
-  if (!filename || !sourceMapData) return true
+function parseTextStack(errorInfo) {
+  const lines = errorInfo.split('\n')
+  const results = []
   
-  // 获取 sourcemap 中的源文件列表
-  const sources = sourceMapData.sources || []
-  const file = filename.replace(/^~\/scripts\//, '').replace(/\.js$/, '')
+  const patterns = [
+    /at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/,
+    /at\s+(.+?):(\d+):(\d+)/,
+    /^(.+?):(\d+):(\d+)$/,
+  ]
   
-  // 检查是否有匹配的源文件
-  const matched = sources.some(source => {
-    const sourceFile = source.split('/').pop().replace(/\.js$/, '')
-    return sourceFile.includes(file) || file.includes(sourceFile)
-  })
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern)
+      if (match) {
+        if (match.length === 5) {
+          // at function (file:line:column)
+          results.push({
+            filename: match[2],
+            function: match[1],
+            line: parseInt(match[3], 10),
+            column: parseInt(match[4], 10),
+          })
+          break
+        } else if (match.length === 4) {
+          // file:line:column
+          results.push({
+            filename: match[1],
+            function: null,
+            line: parseInt(match[2], 10),
+            column: parseInt(match[3], 10),
+          })
+          break
+        }
+      }
+    }
+  }
   
-  return matched || sources.length === 0 // 如果没有 sources 列表，假设匹配
+  return results.length > 0 ? results : null
+}
+
+/**
+ * 从文件名匹配 sourcemap
+ */
+function findMatchingSourceMap(filename, sourceMaps) {
+  if (!filename || !sourceMaps || sourceMaps.length === 0) {
+    return null
+  }
+  
+  // 标准化文件名
+  const normalize = (name) => {
+    return name
+      .replace(/^~\/scripts\//, '')
+      .replace(/^.*\//, '')
+      .replace(/\.js$/, '')
+      .toLowerCase()
+  }
+  
+  const targetFile = normalize(filename)
+  
+  // 遍历所有 sourcemap，找到匹配的
+  for (const map of sourceMaps) {
+    if (!map.content) continue
+    
+    const mapFile = map.content.file || ''
+    const mapSources = map.content.sources || []
+    
+    // 检查编译后的文件名
+    if (mapFile) {
+      const normalizedMapFile = normalize(mapFile)
+      if (normalizedMapFile === targetFile || 
+          normalizedMapFile.includes(targetFile) || 
+          targetFile.includes(normalizedMapFile)) {
+        return map
+      }
+    }
+    
+    // 检查 sources 列表
+    for (const source of mapSources) {
+      const normalizedSource = normalize(source)
+      if (normalizedSource === targetFile ||
+          normalizedSource.includes(targetFile) ||
+          targetFile.includes(normalizedSource)) {
+        return map
+      }
+    }
+    
+    // 检查文件名是否包含在路径中
+    if (mapFile && mapFile.includes(targetFile)) {
+      return map
+    }
+    
+    for (const source of mapSources) {
+      if (source.includes(targetFile) || filename.includes(source.split('/').pop())) {
+        return map
+      }
+    }
+  }
+  
+  return null
 }
 
 /**
  * 使用 sourcemap 解析错误堆栈
- * @param {Object} sourceMapData - sourcemap 数据对象
- * @param {string} errorInfo - 错误堆栈信息（文本或 JSON）
- * @param {Array} allSourceMaps - 所有可用的 sourcemap 文件列表（可选，用于自动匹配）
  */
-export async function parseSourceMap(sourceMapData, errorInfo, allSourceMaps = []) {
-  try {
-    // 验证 sourceMapData 格式
-    if (!sourceMapData || typeof sourceMapData !== 'object') {
-      throw new Error('无效的 sourcemap 数据格式')
+export async function parseSourceMap(sourceMaps, errorInfo) {
+  if (!sourceMaps || sourceMaps.length === 0) {
+    throw new Error('请先上传 sourcemap 文件')
+  }
+  
+  if (!errorInfo || !errorInfo.trim()) {
+    throw new Error('请输入错误信息')
+  }
+  
+  // 解析错误堆栈
+  let stackFrames = parseJSONStack(errorInfo)
+  if (!stackFrames) {
+    stackFrames = parseTextStack(errorInfo)
+  }
+  
+  if (!stackFrames || stackFrames.length === 0) {
+    throw new Error('无法解析错误堆栈。请确保格式正确，例如：\n[{"filename":"file.js","lineno":1,"colno":100}]')
+  }
+  
+  console.log('解析到', stackFrames.length, '个堆栈帧')
+  
+  // 创建 sourcemap consumer 缓存
+  const consumerCache = new Map()
+  
+  const getConsumer = async (sourceMapContent) => {
+    if (consumerCache.has(sourceMapContent)) {
+      return consumerCache.get(sourceMapContent)
     }
-
-    // 检查 sourcemap 基本结构
-    if (!sourceMapData.version || !sourceMapData.mappings) {
-      console.warn('SourceMap 可能格式不正确:', {
-        hasVersion: !!sourceMapData.version,
-        hasMappings: !!sourceMapData.mappings,
-        keys: Object.keys(sourceMapData),
+    
+    return new Promise((resolve, reject) => {
+      SourceMapConsumer.with(sourceMapContent, null, (consumer) => {
+        consumerCache.set(sourceMapContent, consumer)
+        resolve(consumer)
       })
-    }
-
-    // 显示 sourcemap 信息
-    console.log('SourceMap 信息:', {
-      version: sourceMapData.version,
-      file: sourceMapData.file,
-      sources: sourceMapData.sources?.slice(0, 5) || [],
-      sourcesCount: sourceMapData.sources?.length || 0,
     })
-
-    // 创建 SourceMapConsumer
-    const consumer = await new SourceMapConsumer(sourceMapData)
-
+  }
+  
+  // 解析每个堆栈帧
+  const results = []
+  
+  for (const frame of stackFrames) {
     try {
-      // 首先尝试解析 JSON 格式
-      const jsonStack = parseJSONStack(errorInfo)
-      if (jsonStack && jsonStack.length > 0) {
-        console.log('检测到 JSON 格式的错误堆栈，共', jsonStack.length, '项')
-        const results = []
-        
-        for (const stackInfo of jsonStack) {
-          try {
-            // 如果提供了多个 sourcemap，尝试找到匹配的
-            let currentConsumer = consumer
-            let currentSourceMap = sourceMapData
-            
-            if (allSourceMaps && allSourceMaps.length > 1) {
-              // 尝试找到匹配的 sourcemap
-              const matchedMap = allSourceMaps.find(map => {
-                return matchSourceMapByFilename(stackInfo.source, map.content)
-              })
-              
-              if (matchedMap && matchedMap.content !== sourceMapData) {
-                console.log('找到匹配的 sourcemap:', matchedMap.name, 'for', stackInfo.source)
-                currentSourceMap = matchedMap.content
-                currentConsumer = await new SourceMapConsumer(matchedMap.content)
-              }
-            }
-            
-            // 检查文件名是否匹配（如果 sourcemap 有 sources 信息）
-            if (!matchSourceMapByFilename(stackInfo.source, currentSourceMap)) {
-              console.warn('文件名不匹配，跳过:', {
-                stackFile: stackInfo.source,
-                sourceMapSources: currentSourceMap.sources?.slice(0, 3),
-              })
-              results.push({
-                functionName: stackInfo.functionName || '(anonymous)',
-                source: stackInfo.source,
-                originalLine: null,
-                originalColumn: null,
-                line: stackInfo.line,
-                column: stackInfo.column,
-                note: '文件名不匹配当前 sourcemap',
-              })
-              continue
-            }
-
-            // source-map 库的行号是从 1 开始，列号是从 0 开始
-            const queryLine = Math.max(1, stackInfo.line)
-            const queryColumn = Math.max(0, stackInfo.column - 1) // 转换为 0-based
-            
-            console.log('查询原始位置:', {
-              filename: stackInfo.source,
-              function: stackInfo.functionName,
-              input: { line: queryLine, column: queryColumn },
-            })
-
-            const originalPosition = consumer.originalPositionFor({
-              line: queryLine,
-              column: queryColumn,
-            })
-
-            console.log('原始位置查询结果:', {
-              input: { line: queryLine, column: queryColumn },
-              output: originalPosition,
-            })
-
-            if (originalPosition && originalPosition.source) {
-              results.push({
-                functionName: stackInfo.functionName || originalPosition.name || '(anonymous)',
-                source: originalPosition.source,
-                originalLine: originalPosition.line,
-                originalColumn: originalPosition.column !== null 
-                  ? originalPosition.column + 1 
-                  : null, // 转换回 1-based
-                line: stackInfo.line,
-                column: stackInfo.column,
-              })
-            } else {
-              // 如果找不到原始位置，仍然保留原始信息
-              console.warn('未找到原始位置映射:', {
-                input: { line: queryLine, column: queryColumn },
-                output: originalPosition,
-              })
-              results.push({
-                functionName: stackInfo.functionName || '(anonymous)',
-                source: stackInfo.source,
-                originalLine: null,
-                originalColumn: null,
-                line: stackInfo.line,
-                column: stackInfo.column,
-              })
-            }
-          } catch (positionError) {
-            console.warn('解析位置失败，保留原始信息:', positionError, stackInfo)
-            results.push({
-              functionName: stackInfo.functionName || '(anonymous)',
-              source: stackInfo.source,
-              originalLine: null,
-              originalColumn: null,
-              line: stackInfo.line,
-              column: stackInfo.column,
-            })
-          }
-        }
-        
-        console.log('JSON 格式解析完成，找到', results.length, '个结果')
-        return results
-      }
-
-      // 如果不是 JSON 格式，按文本格式解析
-      const lines = errorInfo.split('\n')
-      const results = []
-      let parsedCount = 0
-      const failedLines = []
-
-      console.log('开始解析文本格式错误堆栈，共', lines.length, '行')
-      console.log('错误堆栈内容:', errorInfo)
-
-      for (const line of lines) {
-        const trimmedLine = line.trim()
-        if (!trimmedLine) {
-          continue
-        }
-        
-        const stackInfo = parseStackLine(trimmedLine)
-        if (!stackInfo || !stackInfo.line || !stackInfo.column) {
-          failedLines.push(trimmedLine)
-          console.log('无法解析的行:', trimmedLine)
-          continue
-        }
-
-        parsedCount++
-        console.log('解析堆栈行:', stackInfo)
-
-        try {
-          // 尝试查找原始位置
-          // 注意：source-map 库的列号是从 0 开始的，而错误信息通常是从 1 开始的
-          const originalPosition = consumer.originalPositionFor({
-            line: stackInfo.line,
-            column: Math.max(0, stackInfo.column - 1), // 转换为 0-based，确保非负数
-          })
-
-          console.log('原始位置查询结果:', {
-            input: { line: stackInfo.line, column: stackInfo.column - 1 },
-            output: originalPosition,
-          })
-
-          if (originalPosition && originalPosition.source) {
-            results.push({
-              functionName: stackInfo.functionName || originalPosition.name || '(anonymous)',
-              source: originalPosition.source,
-              originalLine: originalPosition.line,
-              originalColumn: originalPosition.column !== null 
-                ? originalPosition.column + 1 
-                : null, // 转换回 1-based
-              line: stackInfo.line,
-              column: stackInfo.column,
-            })
-          } else {
-            // 如果找不到原始位置，仍然保留原始信息
-            console.warn('未找到原始位置，保留原始信息:', stackInfo)
-            results.push({
-              functionName: stackInfo.functionName || '(anonymous)',
-              source: stackInfo.source,
-              originalLine: null,
-              originalColumn: null,
-              line: stackInfo.line,
-              column: stackInfo.column,
-            })
-          }
-        } catch (positionError) {
-          // 如果单个位置解析失败，仍然保留原始信息
-          console.warn('解析位置失败，保留原始信息:', positionError, stackInfo)
-          results.push({
-            functionName: stackInfo.functionName || '(anonymous)',
-            source: stackInfo.source,
-            originalLine: null,
-            originalColumn: null,
-            line: stackInfo.line,
-            column: stackInfo.column,
-          })
-        }
-      }
-
-      console.log('解析完成，共解析', parsedCount, '行，找到', results.length, '个结果')
-      console.log('无法解析的行数:', failedLines.length)
-      if (failedLines.length > 0) {
-        console.log('无法解析的行:', failedLines)
+      // 找到匹配的 sourcemap
+      const matchedMap = findMatchingSourceMap(frame.filename, sourceMaps)
+      
+      if (!matchedMap) {
+        console.warn('未找到匹配的 sourcemap for:', frame.filename)
+        results.push({
+          functionName: frame.function || '(anonymous)',
+          source: frame.filename,
+          originalSource: frame.filename,
+          originalLine: null,
+          originalColumn: null,
+          line: frame.line,
+          column: frame.column,
+          hasMapping: false,
+        })
+        continue
       }
       
-      if (results.length === 0) {
-        const errorMsg = `未能从错误堆栈中解析出任何位置信息。
-
-已尝试解析 ${lines.length} 行，但未找到包含行号和列号的有效堆栈信息。
-
-无法解析的行示例：
-${failedLines.slice(0, 5).map(l => `  - ${l}`).join('\n')}
-
-请确保错误堆栈包含以下格式之一：
-  - at functionName (file.js:10:5)
-  - at Object.method (file.js:20:15)
-  - file.js:10:5
-  - at http://example.com/file.js:10:5
-
-当前输入的内容：
-${errorInfo.substring(0, 500)}${errorInfo.length > 500 ? '...' : ''}`
-        throw new Error(errorMsg)
+      // 获取 consumer
+      const consumer = await getConsumer(matchedMap.content)
+      
+      // source-map 库：行号从 1 开始，列号从 0 开始
+      // 错误堆栈中的列号通常是从 1 开始的，需要转换为 0-based
+      const queryLine = Math.max(1, frame.line)
+      const queryColumn = Math.max(0, frame.column - 1) // 转换为 0-based
+      
+      console.log('开始查询:', {
+        filename: frame.filename,
+        originalLine: frame.line,
+        originalColumn: frame.column,
+        queryLine,
+        queryColumn,
+        sourceMapFile: matchedMap.content.file,
+      })
+      
+      // 智能查询策略：尝试多个列号
+      // 因为压缩后的代码可能在同一行有多个映射点，我们需要找到最接近的
+      let originalPosition = null
+      const tryColumns = []
+      
+      // 1. 首先尝试精确的列号
+      tryColumns.push(queryColumn)
+      
+      // 2. 如果列号 > 0，尝试列号 0（很多 sourcemap 只在列号 0 有映射）
+      if (queryColumn > 0) {
+        tryColumns.push(0)
       }
-
-      return results
+      
+      // 3. 尝试附近的列号（±1, ±2）
+      if (queryColumn > 1) {
+        tryColumns.push(queryColumn - 1)
+      }
+      if (queryColumn > 2) {
+        tryColumns.push(queryColumn - 2)
+      }
+      tryColumns.push(queryColumn + 1)
+      tryColumns.push(queryColumn + 2)
+      
+      // 去重并排序
+      const uniqueColumns = [...new Set(tryColumns)].sort((a, b) => {
+        // 优先尝试接近原始列号的
+        const diffA = Math.abs(a - queryColumn)
+        const diffB = Math.abs(b - queryColumn)
+        return diffA - diffB
+      })
+      
+      // 尝试每个列号
+      for (const col of uniqueColumns) {
+        if (col < 0) continue // 跳过负数
+        
+        const testPosition = consumer.originalPositionFor({
+          line: queryLine,
+          column: col,
+        })
+        
+        console.log(`尝试列号 ${col}:`, {
+          hasSource: !!testPosition?.source,
+          source: testPosition?.source,
+          line: testPosition?.line,
+          column: testPosition?.column,
+        })
+        
+        // 如果找到了有效的映射，使用它
+        if (testPosition && testPosition.source) {
+          originalPosition = testPosition
+          console.log(`✓ 在列号 ${col} 找到映射`)
+          break
+        }
+      }
+      
+      // 如果还是找不到，尝试使用 allGeneratedPositionsFor 查找该行的所有映射点
+      if (!originalPosition || !originalPosition.source) {
+        console.log('尝试查找该行的所有映射点...')
+        try {
+          // 尝试查找该行是否有任何映射
+          // 注意：这个方法需要原始源代码位置，我们反过来用
+          // 先尝试查询该行的第一个和最后一个列号
+          const firstCol = consumer.originalPositionFor({
+            line: queryLine,
+            column: 0,
+          })
+          
+          if (firstCol && firstCol.source) {
+            originalPosition = firstCol
+            console.log('使用列号 0 的映射')
+          }
+        } catch (e) {
+          console.warn('查找映射点时出错:', e)
+        }
+      }
+      
+      console.log('最终查询结果:', {
+        input: { line: queryLine, column: queryColumn, originalColumn: frame.column },
+        output: originalPosition,
+        found: !!(originalPosition && originalPosition.source),
+      })
+      
+      if (originalPosition && originalPosition.source) {
+        results.push({
+          functionName: frame.function || originalPosition.name || '(anonymous)',
+          source: originalPosition.source,
+          originalSource: frame.filename,
+          originalLine: originalPosition.line,
+          originalColumn: originalPosition.column !== null ? originalPosition.column + 1 : null,
+          line: frame.line,
+          column: frame.column,
+          hasMapping: true,
+        })
+      } else {
+        // 找不到映射，保留原始信息
+        console.warn('未找到映射:', {
+          filename: frame.filename,
+          line: frame.line,
+          column: frame.column,
+          queryLine,
+          queryColumn,
+        })
+        results.push({
+          functionName: frame.function || '(anonymous)',
+          source: frame.filename,
+          originalSource: frame.filename,
+          originalLine: null,
+          originalColumn: null,
+          line: frame.line,
+          column: frame.column,
+          hasMapping: false,
+        })
+      }
     } catch (error) {
-      throw new Error('解析错误堆栈失败: ' + error.message)
+      console.error('解析堆栈帧失败:', error, frame)
+      // 出错时仍然保留原始信息
+      results.push({
+        functionName: frame.function || '(anonymous)',
+        source: frame.filename,
+        originalSource: frame.filename,
+        originalLine: null,
+        originalColumn: null,
+        line: frame.line,
+        column: frame.column,
+        hasMapping: false,
+      })
     }
-  } catch (error) {
-    throw new Error('创建 SourceMapConsumer 失败: ' + error.message)
   }
+  
+  if (results.length === 0) {
+    throw new Error('未能解析出任何结果')
+  }
+  
+  return results
 }
-

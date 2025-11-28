@@ -17,9 +17,9 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
-      source-map-js:
-        specifier: ^1.0.2
-        version: 1.2.1
+      source-map:
+        specifier: ^0.7.4
+        version: 0.7.6
     devDependencies:
       '@types/react':
         specifier: ^18.3.3
@@ -819,6 +819,10 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  source-map@0.7.6:
+    resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
+    engines: {node: '>= 12'}
+
   string_decoder@1.1.1:
     resolution: {integrity: sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==}
 
@@ -1583,6 +1587,8 @@ snapshots:
   setimmediate@1.0.5: {}
 
   source-map-js@1.2.1: {}
+
+  source-map@0.7.6: {}
 
   string_decoder@1.1.1:
     dependencies:

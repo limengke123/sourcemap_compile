@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "predev": "mkdir -p public/lib && cp node_modules/source-map/lib/mappings.wasm public/lib/mappings.wasm 2>/dev/null || true",
+    "dev": "npm run predev && vite",
+    "prebuild": "mkdir -p public/lib && cp node_modules/source-map/lib/mappings.wasm public/lib/mappings.wasm 2>/dev/null || true",
+    "build": "npm run prebuild && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "source-map-js": "^1.0.2",
+    "source-map": "^0.7.4",
     "jszip": "^3.10.1"
   },
   "devDependencies": {

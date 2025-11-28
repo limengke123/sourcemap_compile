@@ -3,12 +3,10 @@ import FileUpload from './components/FileUpload'
 import ErrorInput from './components/ErrorInput'
 import ErrorStack from './components/ErrorStack'
 import ErrorMessage from './components/ErrorMessage'
-import SourceMapSelector from './components/SourceMapSelector'
 import { parseSourceMap } from './utils/sourcemapParser'
 
 function App() {
   const [sourceMaps, setSourceMaps] = useState([])
-  const [selectedMapIndex, setSelectedMapIndex] = useState(0)
   const [errorInfo, setErrorInfo] = useState('')
   const [parsedStack, setParsedStack] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -17,14 +15,12 @@ function App() {
   const handleFileUpload = useCallback((file) => {
     // 单个文件上传
     setSourceMaps([file])
-    setSelectedMapIndex(0)
     setParsedStack(null)
   }, [])
 
   const handleMultipleFiles = useCallback((files) => {
     // 多个文件上传
     setSourceMaps(files)
-    setSelectedMapIndex(0)
     setParsedStack(null)
   }, [])
 
@@ -41,15 +37,17 @@ function App() {
       return
     }
 
-    const selectedMap = sourceMaps[selectedMapIndex]
-    if (!selectedMap || !selectedMap.content) {
-      setErrorMessage('请选择有效的 sourcemap 文件')
+    // 验证所有 sourcemap 文件
+    const validMaps = sourceMaps.filter(map => map && map.content)
+    if (validMaps.length === 0) {
+      setErrorMessage('没有有效的 sourcemap 文件')
       return
     }
 
     setIsProcessing(true)
     try {
-      const result = await parseSourceMap(selectedMap.content, errorInfo, sourceMaps)
+      // 传入所有 sourcemap 文件，系统会自动匹配
+      const result = await parseSourceMap(validMaps, errorInfo)
       setParsedStack(result)
       setErrorMessage(null) // 清除错误信息
     } catch (error) {
@@ -67,7 +65,7 @@ function App() {
     } finally {
       setIsProcessing(false)
     }
-  }, [sourceMaps, selectedMapIndex, errorInfo])
+  }, [sourceMaps, errorInfo])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -95,17 +93,17 @@ function App() {
               onMultipleFiles={handleMultipleFiles}
             />
             {sourceMaps.length > 0 && (
-              <div className="mt-4 space-y-3">
+              <div className="mt-4">
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <p className="text-sm text-green-800">
                     ✓ 已加载 {sourceMaps.length} 个 SourceMap 文件
                   </p>
+                  {sourceMaps.length > 1 && (
+                    <p className="text-xs text-green-700 mt-1">
+                      系统将自动为错误堆栈中的每个文件匹配对应的 sourcemap
+                    </p>
+                  )}
                 </div>
-                <SourceMapSelector
-                  sourceMaps={sourceMaps}
-                  selectedIndex={selectedMapIndex}
-                  onSelect={setSelectedMapIndex}
-                />
               </div>
             )}
           </div>
