@@ -1,65 +1,151 @@
-# SourceMap 错误解析工具
+# 🔍 TraceMap - SourceMap Error Parser
 
-一个简洁易用的 SourceMap 错误解析工具，帮助开发者快速定位生产环境中的错误位置。
+> **Transform cryptic production errors into readable source code locations** 🚀
 
-## 功能特性
+TraceMap is a powerful, user-friendly web application that helps developers quickly locate and debug production errors by parsing SourceMap files. No more guessing where errors occur in your minified code!
 
-- 📁 支持拖拽上传 SourceMap 文件
-- 📝 输入错误堆栈信息
-- 🔍 自动解析并显示原始源代码位置
-- 🎨 简洁美观的 UI 界面
+## ✨ Features
 
-## 技术栈
+- 📁 **Drag & Drop Support** - Easily upload SourceMap files by dragging and dropping
+- 📦 **ZIP Archive Support** - Upload entire SourceMap archives in one go
+- 📝 **Multiple File Formats** - Supports individual `.map` files, directories, and ZIP archives
+- 🔍 **Intelligent Parsing** - Automatically extracts and displays original source code locations
+- 🎨 **Beautiful UI** - Clean, modern interface built with Tailwind CSS
+- 📋 **One-Click Copy** - Copy parsed stack traces with a single click
+- ⚡ **Fast & Lightweight** - Built with Vite for optimal performance
 
-- **Vite** - 快速的前端构建工具
-- **React** - UI 框架
-- **Tailwind CSS** - 样式框架
-- **source-map** - SourceMap 解析库
+## 🛠️ Tech Stack
 
-## 快速开始
+- **⚡ Vite** - Lightning-fast build tool
+- **⚛️ React 18** - Modern UI framework
+- **🎨 Tailwind CSS** - Utility-first CSS framework
+- **📦 source-map** - SourceMap parsing library
+- **📝 TypeScript** - Type-safe development
 
-### 安装依赖
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ 
+- pnpm (recommended) or npm
+
+### Installation
 
 ```bash
+# Install dependencies
+pnpm install
+# or
 npm install
 ```
 
-### 启动开发服务器
+### Development
 
 ```bash
+# Start development server
+pnpm dev
+# or
 npm run dev
 ```
 
-### 构建生产版本
+The app will be available at `http://localhost:5173`
+
+### Build
 
 ```bash
+# Build for production
+pnpm build
+# or
 npm run build
+
+# Build and create ZIP package
+pnpm build:zip
+# or
+npm run build:zip
 ```
 
-## 使用方法
+### Preview Production Build
 
-1. 上传 SourceMap 文件：拖拽 `.map` 文件到上传区域，或点击选择文件
-2. 输入错误信息：在文本框中粘贴完整的错误堆栈信息
-3. 点击"解析错误栈"按钮
-4. 查看解析结果：工具会显示每个堆栈帧的原始源代码位置
+```bash
+pnpm preview
+# or
+npm run preview
+```
 
-## 错误信息格式
+## 📖 How to Use
 
-工具支持以下格式的错误堆栈：
+### Step 1: Upload SourceMap Files
 
+You can upload SourceMap files in three ways:
+
+- **Drag & Drop**: Drag `.map` files directly onto the upload area
+- **Directory Upload**: Drag an entire folder containing SourceMap files
+- **ZIP Archive**: Upload a ZIP file containing multiple SourceMap files
+
+### Step 2: Enter Error Stack Trace
+
+Paste your error stack trace into the input field. The tool supports various formats:
+
+**Standard Error Format:**
 ```
 Error: Something went wrong
     at Object.fn (http://example.com/bundle.js:1:100)
     at main (http://example.com/bundle.js:2:200)
+    at HTMLButtonElement.onclick (http://example.com/bundle.js:3:300)
 ```
 
-或
-
+**Simple Stack Format:**
 ```
 at http://example.com/file.js:10:5
+at http://example.com/utils.js:25:15
 ```
 
-## License
+### Step 3: Parse & View Results
 
-MIT
+Click the **"Parse Stack Trace"** button and watch as the tool:
 
+- 🔍 Analyzes each stack frame
+- 📍 Maps minified locations to original source code
+- 📋 Displays file paths, line numbers, and column numbers
+- 🎯 Highlights the exact error location
+
+### Step 4: Copy Results
+
+Use the **"Copy All"** button to copy the entire parsed stack trace for easy sharing or documentation.
+
+## 🎯 Use Cases
+
+- 🐛 **Debug Production Errors** - Quickly locate bugs in production without source maps in the browser
+- 📊 **Error Reporting** - Parse error reports from monitoring tools
+- 🔧 **Code Review** - Understand error context during code reviews
+- 📝 **Documentation** - Generate readable error reports for team members
+
+## 📋 Supported Formats
+
+- ✅ Individual `.map` files
+- ✅ Multiple `.map` files (directory upload)
+- ✅ ZIP archives containing `.map` files
+- ✅ Standard JavaScript error stack traces
+- ✅ Chrome DevTools stack traces
+- ✅ Node.js error stack traces
+
+## 🏗️ Project Structure
+
+```
+sourcemap-compile/
+├── src/
+│   ├── components/      # React components
+│   ├── utils/          # Utility functions
+│   ├── types/          # TypeScript types
+│   └── App.tsx         # Main application
+├── scripts/
+│   └── zip-dist.js     # Build script for ZIP packaging
+└── public/             # Static assets
+```
+
+## 📄 License
+
+MIT License - feel free to use this project for personal or commercial purposes.
+
+---
+
+**Made with ❤️ for developers who hate debugging minified code**
