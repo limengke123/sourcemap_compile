@@ -149,7 +149,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
           >
             {/* Stack frame header */}
             <div
-              className={`flex items-start p-3 cursor-pointer transition-colors ${
+              className={`flex items-center p-3 cursor-pointer transition-colors ${
                 isExpanded ? 'bg-blue-50/50' : ''
               }`}
               onClick={() => toggleExpand(index)}
@@ -169,7 +169,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                 </div>
                 
                 {/* File path and location - similar to browser dev tools */}
-                <div className="flex items-start gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="text-sm text-gray-700 font-mono min-w-0 flex-1 break-all">
                     {hasMapping ? (
                       <>
@@ -204,70 +204,74 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       </>
                     )}
                   </div>
-                  {/* Copy button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      copyToClipboard(item, index)
-                    }}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
-                    title="Copy file path"
-                  >
-                    {copiedIndex === index ? (
-                      <svg
-                        className="w-5 h-5 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                    )}
-                  </button>
                 </div>
               </div>
               
-              {/* Expand/collapse button */}
-              <button
-                className="ml-2 flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleExpand(index)
-                }}
-              >
-                <svg
-                  className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Action buttons - aligned together */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Copy button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    copyToClipboard(item, index)
+                  }}
+                  className="p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
+                  title="Copy file path"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                  {copiedIndex === index ? (
+                    <svg
+                      className="w-5 h-5 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  )}
+                </button>
+                
+                {/* Expand/collapse button */}
+                <button
+                  className="p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleExpand(index)
+                  }}
+                >
+                  <svg
+                    className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Detailed information (shown when expanded) */}
