@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { ParsedStackFrame } from '../types'
 
 interface ErrorStackProps {
@@ -6,8 +6,19 @@ interface ErrorStackProps {
 }
 
 function ErrorStack({ stack }: ErrorStackProps) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
+  // 默认展开前3项（如果stack长度>=3，则展开0,1,2；否则展开所有项）
+  const defaultExpanded = useMemo(() => {
+    const count = Math.min(3, stack.length)
+    return new Set(Array.from({ length: count }, (_, i) => i))
+  }, [stack.length])
+  
+  const [expandedIndexes, setExpandedIndexes] = useState<Set<number>>(defaultExpanded)
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  // 当 stack 改变时，重置为默认展开前3项
+  useEffect(() => {
+    setExpandedIndexes(defaultExpanded)
+  }, [defaultExpanded])
 
   if (!stack || stack.length === 0) {
     return (
@@ -18,7 +29,15 @@ function ErrorStack({ stack }: ErrorStackProps) {
   }
 
   const toggleExpand = (index: number) => {
-    setExpandedIndex(expandedIndex === index ? null : index)
+    setExpandedIndexes(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
   }
   
   // Format file path for readability
@@ -116,7 +135,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
   return (
     <div className="space-y-2">
       {stack.map((item, index) => {
-        const isExpanded = expandedIndex === index
+        const isExpanded = expandedIndexes.has(index)
         const hasMapping = item.hasMapping && item.originalLine !== null
         
         return (
@@ -137,7 +156,11 @@ function ErrorStack({ stack }: ErrorStackProps) {
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded flex-shrink-0">
+                  <span className={`font-mono bg-gray-100 px-2 py-0.5 rounded flex-shrink-0 transition-all duration-200 ${
+                    isExpanded 
+                      ? 'text-sm font-bold text-gray-700 bg-blue-100' 
+                      : 'text-xs text-gray-500'
+                  }`}>
                     #{index + 1}
                   </span>
                   <span className="font-semibold text-gray-900 truncate">
