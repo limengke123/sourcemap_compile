@@ -178,26 +178,38 @@ function App() {
   }, [sourceMaps, errorInfo])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <ErrorMessage 
         message={errorMessage} 
         onClose={() => setErrorMessage(null)} 
       />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+        <header className="text-center mb-12 animate-fade-in">
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4 tracking-tight">
             SourceMap 错误解析工具
           </h1>
-          <p className="text-gray-600">
-            上传 sourcemap 文件并输入错误信息，获取详细的错误栈信息
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            上传 sourcemap 文件并输入错误信息，快速定位生产环境中的错误位置
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              1. 上传 SourceMap 文件
-            </h2>
+          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                1. 上传 SourceMap 文件
+              </h2>
+            </div>
             <FileUpload 
               onFileUpload={handleFileUpload} 
               onMultipleFiles={handleMultipleFiles}
@@ -208,8 +220,13 @@ function App() {
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => setIsFileListExpanded(!isFileListExpanded)}
-                      className="flex items-center gap-2 text-sm text-green-800 font-medium hover:text-green-900 transition-colors"
+                      className="flex items-center gap-2 text-sm text-green-800 font-medium hover:text-green-900 transition-all duration-200 hover:scale-105"
                     >
+                      <div className="flex-shrink-0 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                       <svg
                         className={`w-4 h-4 transition-transform duration-200 ${isFileListExpanded ? 'rotate-90' : ''}`}
                         fill="none"
@@ -223,7 +240,7 @@ function App() {
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                      <span>✓ 已加载 {sourceMaps.length} 个 SourceMap 文件</span>
+                      <span className="font-semibold">已加载 {sourceMaps.length} 个 SourceMap 文件</span>
                     </button>
                     <div className="flex items-center gap-2">
                       {sourceMaps.length > 1 && (
@@ -247,16 +264,21 @@ function App() {
                       {sourceMaps.map((file, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between bg-white rounded px-3 py-2 border border-green-200"
+                          className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-green-200 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
                         >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate font-mono">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-md flex items-center justify-center">
+                              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <p className="text-sm text-gray-800 truncate font-mono flex-1 min-w-0">
                               {file.name}
                             </p>
                           </div>
                           <button
                             onClick={() => handleRemoveFile(index)}
-                            className="ml-2 flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors"
+                            className="ml-2 flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200 opacity-0 group-hover:opacity-100"
                             title="移除文件"
                           >
                             <svg
@@ -287,33 +309,62 @@ function App() {
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              2. 输入错误信息
-            </h2>
+          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                2. 输入错误信息
+              </h2>
+            </div>
             <ErrorInput value={errorInfo} onChange={setErrorInfo} />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <button
             onClick={handleParse}
             disabled={isProcessing || sourceMaps.length === 0 || !errorInfo.trim()}
-            className="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
           >
-            {isProcessing ? '解析中...' : '解析错误栈'}
+            {isProcessing ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>解析中...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <span>解析错误栈</span>
+              </>
+            )}
           </button>
         </div>
 
         {parsedStack && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                解析结果
-              </h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  解析结果
+                </h2>
+              </div>
               <button
                 onClick={copyAllStack}
-                className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 transform hover:scale-110"
                 title="复制所有错误栈"
               >
                 {copiedAll ? (
