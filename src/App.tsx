@@ -199,7 +199,7 @@ function App() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up">
+          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up flex flex-col">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,10 +210,12 @@ function App() {
                 1. 上传 SourceMap 文件
               </h2>
             </div>
-            <FileUpload 
-              onFileUpload={handleFileUpload} 
-              onMultipleFiles={handleMultipleFiles}
-            />
+            <div className="flex-1">
+              <FileUpload 
+                onFileUpload={handleFileUpload} 
+                onMultipleFiles={handleMultipleFiles}
+              />
+            </div>
             {sourceMaps.length > 0 && (
               <div className="mt-4">
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
@@ -309,7 +311,7 @@ function App() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100 animate-slide-up flex flex-col" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +322,9 @@ function App() {
                 2. 输入错误信息
               </h2>
             </div>
-            <ErrorInput value={errorInfo} onChange={setErrorInfo} />
+            <div className="flex-1">
+              <ErrorInput value={errorInfo} onChange={setErrorInfo} />
+            </div>
           </div>
         </div>
 

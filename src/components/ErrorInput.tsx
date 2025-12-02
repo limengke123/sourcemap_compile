@@ -5,12 +5,12 @@ interface ErrorInputProps {
 
 function ErrorInput({ value, onChange }: ErrorInputProps) {
   return (
-    <div>
+    <div className="h-full flex flex-col">
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="请输入错误信息，例如：&#10;Error: Something went wrong&#10;    at Object.fn (http://example.com/bundle.js:1:100)&#10;    at main (http://example.com/bundle.js:2:200)"
-        className="w-full h-48 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 resize-none font-mono text-sm transition-all duration-200 bg-gray-50 hover:bg-white hover:border-gray-300"
+        className="w-full flex-1 min-h-[280px] px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 resize-none font-mono text-sm transition-all duration-200 bg-gray-50 hover:bg-white hover:border-gray-300"
       />
       <div className="flex items-center gap-2 mt-3">
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
