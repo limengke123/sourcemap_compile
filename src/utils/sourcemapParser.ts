@@ -203,6 +203,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
           line: frame.line,
           column: frame.column,
           hasMapping: false,
+          content: null,
         })
         continue
       }
@@ -307,6 +308,14 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
       })
       
       if (originalPosition && originalPosition.source) {
+        // 获取原始源代码内容
+        let sourceContent: string | null = null
+        try {
+          sourceContent = consumer.sourceContentFor(originalPosition.source)
+        } catch (error) {
+          console.warn('无法获取源代码内容:', originalPosition.source, error)
+        }
+        
         results.push({
           functionName: frame.function || originalPosition.name || '(anonymous)',
           source: originalPosition.source,
@@ -316,6 +325,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
           line: frame.line,
           column: frame.column,
           hasMapping: true,
+          content: sourceContent,
         })
       } else {
         // 找不到映射，保留原始信息
@@ -335,6 +345,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
           line: frame.line,
           column: frame.column,
           hasMapping: false,
+          content: null,
         })
       }
     } catch (error) {
@@ -349,6 +360,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
         line: frame.line,
         column: frame.column,
         hasMapping: false,
+        content: null,
       })
     }
   }

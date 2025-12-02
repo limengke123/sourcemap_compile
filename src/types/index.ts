@@ -19,5 +19,6 @@ export interface ParsedStackFrame {
   line: number
   column: number
   hasMapping: boolean
+  content: string | null // 原始源代码内容
 }
 
