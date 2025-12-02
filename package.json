@@ -8,20 +8,22 @@
     "dev": "npm run predev && vite",
     "prebuild": "mkdir -p public/lib && cp node_modules/source-map/lib/mappings.wasm public/lib/mappings.wasm 2>/dev/null || true",
     "build": "npm run prebuild && vite build",
+    "build:zip": "npm run build && node scripts/zip-dist.js",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "source-map": "^0.7.4",
-    "jszip": "^3.10.1"
+    "source-map": "^0.7.4"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
+    "jszip": "^3.10.1",
+    "@types/node": "^20.11.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/node": "^20.11.0",
-    "@types/jszip": "^3.4.1",
     "@vitejs/plugin-react": "^4.3.1",
+    "archiver": "^7.0.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
@@ -29,4 +31,3 @@
     "vite": "^5.4.2"
   }
 }
-
