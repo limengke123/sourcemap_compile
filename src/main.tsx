@@ -6,9 +6,15 @@ import { SourceMapConsumer } from 'source-map'
 
 // Initialize source-map WASM file
 async function initializeSourceMap(): Promise<void> {
+  // Get base URL from Vite (handles GitHub Pages subpath)
+  const baseUrl = import.meta.env.BASE_URL || '/'
+  // Ensure base URL ends with / for proper path joining
+  const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'
+  
   try {
-    // Method 1: Load WASM file from public directory
-    const wasmResponse = await fetch('/lib/mappings.wasm')
+    // Method 1: Load WASM file from public directory (production)
+    const wasmPath = `${normalizedBase}lib/mappings.wasm`
+    const wasmResponse = await fetch(wasmPath)
     if (wasmResponse.ok) {
       const wasmBuffer = await wasmResponse.arrayBuffer()
       SourceMapConsumer.initialize({
@@ -20,7 +26,8 @@ async function initializeSourceMap(): Promise<void> {
   } catch (error) {
     try {
       // Method 2: Load from node_modules (development environment)
-      const wasmResponse = await fetch('/node_modules/source-map/lib/mappings.wasm')
+      const devWasmPath = `${normalizedBase}node_modules/source-map/lib/mappings.wasm`
+      const wasmResponse = await fetch(devWasmPath)
       if (wasmResponse.ok) {
         const wasmBuffer = await wasmResponse.arrayBuffer()
         SourceMapConsumer.initialize({
