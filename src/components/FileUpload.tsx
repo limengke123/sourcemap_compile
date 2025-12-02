@@ -165,17 +165,17 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`
-        border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300
+        border-2 border-dashed rounded-lg p-5 text-center transition-all duration-300
         ${isDragging 
-          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 scale-[1.02] shadow-lg' 
+          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 scale-[1.01] shadow-md' 
           : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
         }
       `}
     >
       <div className="flex flex-col items-center">
-        <div className={`mb-4 transition-transform duration-300 ${isDragging ? 'scale-110' : ''}`}>
+        <div className={`mb-3 transition-transform duration-300 ${isDragging ? 'scale-110' : ''}`}>
           <svg
-            className={`w-16 h-16 ${isDragging ? 'text-blue-500' : 'text-gray-400'} transition-colors duration-300`}
+            className={`w-12 h-12 ${isDragging ? 'text-blue-500' : 'text-gray-400'} transition-colors duration-300`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -190,18 +190,18 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
         </div>
         {isProcessing ? (
           <div className="text-blue-600">
-            <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent mx-auto mb-3"></div>
-            <p className="font-medium">处理中...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-2"></div>
+            <p className="text-sm font-medium">处理中...</p>
           </div>
         ) : (
           <>
-            <p className="text-gray-700 mb-4 font-medium">
+            <p className="text-gray-600 mb-3 text-sm">
               拖拽文件到这里，或
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 w-full">
               <label className="cursor-pointer group">
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   点击选择文件
@@ -214,8 +214,8 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
                 />
               </label>
               <label className="cursor-pointer group">
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 font-medium rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 transform hover:scale-105">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-blue-600 text-sm font-medium rounded-md border border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                   或选择文件夹
@@ -229,9 +229,9 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
                 />
               </label>
             </div>
-            <div className="mt-4 space-y-1">
-              <p className="text-sm text-gray-600">
-                支持 <span className="font-semibold text-blue-600">.map</span> 文件、<span className="font-semibold text-purple-600">ZIP</span> 压缩包或包含 .map 文件的文件夹
+            <div className="mt-3 space-y-0.5">
+              <p className="text-xs text-gray-500">
+                支持 <span className="font-medium text-blue-600">.map</span> 文件、<span className="font-medium text-purple-600">ZIP</span> 压缩包或包含 .map 文件的文件夹
               </p>
               <p className="text-xs text-gray-400">
                 支持上传任意数量的文件（无限制）
