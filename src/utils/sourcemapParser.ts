@@ -91,16 +91,24 @@ function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): S
     return null
   }
   
-  // 标准化文件名
-  const normalize = (name: string): string => {
+  // 提取文件名（不含路径和扩展名）
+  const getBaseName = (path: string): string => {
+    // 移除路径前缀
+    let name = path.replace(/^~\/scripts\//, '')
+    // 获取文件名部分
+    const lastSlash = name.lastIndexOf('/')
+    if (lastSlash !== -1) {
+      name = name.substring(lastSlash + 1)
+    }
+    // 移除扩展名
+    const lastDot = name.lastIndexOf('.')
+    if (lastDot !== -1) {
+      name = name.substring(0, lastDot)
+    }
     return name
-      .replace(/^~\/scripts\//, '')
-      .replace(/^.*\//, '')
-      .replace(/\.js$/, '')
-      .toLowerCase()
   }
   
-  const targetFile = normalize(filename)
+  const targetBaseName = getBaseName(filename)
   
   // 遍历所有 sourcemap，找到匹配的
   for (const map of sourceMaps) {
@@ -109,33 +117,18 @@ function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): S
     const mapFile = map.content.file || ''
     const mapSources = map.content.sources || []
     
-    // 检查编译后的文件名
+    // 1. 检查编译后的文件名（精确匹配文件名）
     if (mapFile) {
-      const normalizedMapFile = normalize(mapFile)
-      if (normalizedMapFile === targetFile || 
-          normalizedMapFile.includes(targetFile) || 
-          targetFile.includes(normalizedMapFile)) {
+      const mapBaseName = getBaseName(mapFile)
+      if (mapBaseName === targetBaseName) {
         return map
       }
     }
     
-    // 检查 sources 列表
+    // 2. 检查 sources 列表（精确匹配文件名）
     for (const source of mapSources) {
-      const normalizedSource = normalize(source)
-      if (normalizedSource === targetFile ||
-          normalizedSource.includes(targetFile) ||
-          targetFile.includes(normalizedSource)) {
-        return map
-      }
-    }
-    
-    // 检查文件名是否包含在路径中
-    if (mapFile && mapFile.includes(targetFile)) {
-      return map
-    }
-    
-    for (const source of mapSources) {
-      if (source.includes(targetFile) || filename.includes(source.split('/').pop() || '')) {
+      const sourceBaseName = getBaseName(source)
+      if (sourceBaseName === targetBaseName) {
         return map
       }
     }
