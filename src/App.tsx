@@ -14,6 +14,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false)
   const [copiedAll, setCopiedAll] = useState<boolean>(false)
+  const [showCopyAllTooltip, setShowCopyAllTooltip] = useState<boolean>(false)
 
   const handleFileUpload = useCallback((file: SourceMapFile) => {
     // Single file upload
@@ -370,9 +371,14 @@ function App() {
                 </h2>
               </div>
               <button
-                onClick={copyAllStack}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
-                title="Copy all"
+                onClick={() => {
+                  copyAllStack()
+                  setShowCopyAllTooltip(false)
+                }}
+                onMouseEnter={() => setShowCopyAllTooltip(true)}
+                onMouseLeave={() => setShowCopyAllTooltip(false)}
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
+                aria-label="Copy all"
               >
                 {copiedAll ? (
                   <svg
@@ -402,6 +408,13 @@ function App() {
                       d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                     />
                   </svg>
+                )}
+                {/* Custom tooltip */}
+                {showCopyAllTooltip && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap z-50 pointer-events-none">
+                    Copy all
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
                 )}
               </button>
             </div>

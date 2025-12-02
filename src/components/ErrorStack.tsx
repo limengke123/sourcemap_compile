@@ -14,6 +14,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
   
   const [expandedIndexes, setExpandedIndexes] = useState<Set<number>>(defaultExpanded)
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const [showTooltip, setShowTooltip] = useState<number | null>(null)
 
   // 当 stack 改变时，重置为默认展开前3项
   useEffect(() => {
@@ -141,7 +142,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
         return (
           <div
             key={index}
-            className={`border rounded-lg bg-white transition-all duration-200 ${
+            className={`border rounded-lg bg-white transition-all duration-200 relative ${
               isExpanded 
                 ? 'border-blue-300 shadow-md bg-gradient-to-br from-white to-blue-50/30' 
                 : 'border-gray-300 hover:border-gray-400 hover:shadow-sm'
@@ -152,7 +153,13 @@ function ErrorStack({ stack }: ErrorStackProps) {
               className={`flex items-center p-3 cursor-pointer transition-colors ${
                 isExpanded ? 'bg-blue-50/50' : ''
               }`}
-              onClick={() => toggleExpand(index)}
+              onClick={(e) => {
+                // 如果点击的是按钮区域，不触发展开/收起
+                if ((e.target as HTMLElement).closest('.action-buttons')) {
+                  return
+                }
+                toggleExpand(index)
+              }}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -208,15 +215,31 @@ function ErrorStack({ stack }: ErrorStackProps) {
               </div>
               
               {/* Action buttons - aligned together */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div 
+                className="action-buttons flex items-center gap-1 flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+                onMouseEnter={(e) => e.stopPropagation()}
+                onMouseLeave={(e) => e.stopPropagation()}
+              >
                 {/* Copy button */}
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     copyToClipboard(item, index)
+                    setShowTooltip(null)
                   }}
-                  className="p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
-                  title="Copy file path"
+                  onMouseEnter={(e) => {
+                    e.stopPropagation()
+                    setShowTooltip(index)
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation()
+                    setShowTooltip(null)
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
+                  aria-label="Copy"
                 >
                   {copiedIndex === index ? (
                     <svg
@@ -247,15 +270,24 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       />
                     </svg>
                   )}
+                  {/* Custom tooltip */}
+                  {showTooltip === index && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap z-[100] pointer-events-none">
+                      Copy
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                    </div>
+                  )}
                 </button>
                 
                 {/* Expand/collapse button */}
                 <button
+                  type="button"
                   className="p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
                   onClick={(e) => {
                     e.stopPropagation()
                     toggleExpand(index)
                   }}
+                  onMouseEnter={(e) => e.stopPropagation()}
                 >
                   <svg
                     className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
