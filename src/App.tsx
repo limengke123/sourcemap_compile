@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import FileUpload from './components/FileUpload'
 import ErrorInput from './components/ErrorInput'
 import ErrorStack from './components/ErrorStack'
@@ -15,6 +15,26 @@ function App() {
   const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false)
   const [copiedAll, setCopiedAll] = useState<boolean>(false)
   const [showCopyAllTooltip, setShowCopyAllTooltip] = useState<boolean>(false)
+  const [showScrollToTop, setShowScrollToTop] = useState<boolean>(false)
+
+  // 监听滚动事件，显示/隐藏回到顶部按钮
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      setShowScrollToTop(scrollTop > 300) // 滚动超过300px时显示按钮
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 滚动到顶部
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }, [])
 
   const handleFileUpload = useCallback((file: SourceMapFile) => {
     // Single file upload
@@ -422,6 +442,31 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Scroll to top button */}
+      <button
+        onClick={scrollToTop}
+        className={`fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center z-50 ${
+          showScrollToTop 
+            ? 'opacity-100 translate-y-0 pointer-events-auto' 
+            : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+        aria-label="Scroll to top"
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 10l7-7m0 0l7 7m-7-7v18"
+          />
+        </svg>
+      </button>
     </div>
   )
 }
