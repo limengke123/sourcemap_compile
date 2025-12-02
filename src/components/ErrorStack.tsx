@@ -210,12 +210,12 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       e.stopPropagation()
                       copyToClipboard(item, index)
                     }}
-                    className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
+                    className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
                     title="Copy file path"
                   >
                     {copiedIndex === index ? (
                       <svg
-                        className="w-4 h-4 text-green-600"
+                        className="w-5 h-5 text-green-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -229,7 +229,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       </svg>
                     ) : (
                       <svg
-                        className="w-4 h-4"
+                        className="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -248,7 +248,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
               
               {/* Expand/collapse button */}
               <button
-                className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="ml-2 flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleExpand(index)
@@ -274,87 +274,18 @@ function ErrorStack({ stack }: ErrorStackProps) {
             {isExpanded && (
               <div className="border-t-2 border-blue-200 bg-gradient-to-br from-gray-50 to-blue-50/20">
                 <div className="p-4 space-y-4">
-                  {/* Original source code location - main display */}
-                  {hasMapping ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                          Original Source Location
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            copyToClipboard(item, index)
-                          }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
-                          title="Copy file path"
-                        >
-                          {copiedIndex === index ? (
-                            <>
-                              <svg
-                                className="w-3 h-3 text-green-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                              <span className="text-green-600">Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                />
-                              </svg>
-                              <span>Copy</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                      <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
-                        <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 break-all">
-                          <span className="text-blue-600 font-mono text-sm break-all">
-                            {formatFilePath(item.source)}
-                          </span>
-                        </div>
-                        <div className="px-3 py-2 font-mono text-sm text-gray-800">
-                          <span className="text-gray-500">Line </span>
-                          <span className="font-semibold text-gray-900">{item.originalLine}</span>
-                          <span className="text-gray-500 mx-2">·</span>
-                          <span className="text-gray-500">Column </span>
-                          <span className="font-semibold text-gray-900">{item.originalColumn || 0}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Compiled location (auxiliary info) */}
-                      {item.originalSource !== item.source && (
-                        <div className="mt-3">
-                          <div className="text-xs text-gray-500 mb-1">
-                            Compiled from:
-                          </div>
-                          <div className="text-xs text-gray-600 font-mono break-all">
-                            {formatFilePath(item.originalSource)}:{item.line}:{item.column}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Unmapped case */
+                  {/* Compiled from and Function Call - merged into one line */}
+                  <div className="text-xs text-gray-500">
+                    {hasMapping && item.originalSource !== item.source && (
+                      <>
+                        Compiled from: <span className="text-gray-600 font-mono">{formatFilePath(item.originalSource)}:{item.line}:{item.column}</span>
+                        <span className="mx-2">·</span>
+                      </>
+                    )}
+                    Function: <span className="text-gray-600 font-mono">{item.functionName || '(anonymous)'}</span>
+                  </div>
+                  
+                  {!hasMapping && (
                     <div>
                       <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
                         Compiled Location
@@ -379,24 +310,9 @@ function ErrorStack({ stack }: ErrorStackProps) {
                     </div>
                   )}
 
-                  {/* Function call information */}
-                  <div>
-                    <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                      Function Call
-                    </div>
-                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2">
-                      <code className="text-sm text-gray-800 font-mono">
-                        {item.functionName || '(anonymous)'}
-                      </code>
-                    </div>
-                  </div>
-
                   {/* Source code content display */}
                   {hasMapping && item.content && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                        Source Code
-                      </div>
                       <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
                         <div className="bg-gray-800 px-3 py-2 border-b border-gray-700 flex items-center justify-between">
                           <span className="text-xs text-gray-400 font-mono">

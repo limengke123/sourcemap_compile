@@ -371,12 +371,12 @@ function App() {
               </div>
               <button
                 onClick={copyAllStack}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 transform hover:scale-110"
-                title="Copy all stack traces"
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100"
+                title="Copy all"
               >
                 {copiedAll ? (
                   <svg
-                    className="w-4 h-4 text-green-600"
+                    className="w-5 h-5 text-green-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -390,7 +390,7 @@ function App() {
                   </svg>
                 ) : (
                   <svg
-                    className="w-4 h-4"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
