@@ -325,7 +325,11 @@ function App() {
               </h2>
             </div>
             <div className="flex-1">
-              <ErrorInput value={errorInfo} onChange={setErrorInfo} />
+              <ErrorInput 
+                value={errorInfo} 
+                onChange={setErrorInfo}
+                onClear={() => setParsedStack(null)}
+              />
             </div>
           </div>
         </div>
