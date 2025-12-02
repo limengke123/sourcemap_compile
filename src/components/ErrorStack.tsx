@@ -124,54 +124,60 @@ function ErrorStack({ stack }: ErrorStackProps) {
         return (
           <div
             key={index}
-            className="border border-gray-300 rounded-md bg-white hover:border-gray-400 transition-colors"
+            className={`border rounded-lg bg-white transition-all duration-200 ${
+              isExpanded 
+                ? 'border-blue-300 shadow-md bg-gradient-to-br from-white to-blue-50/30' 
+                : 'border-gray-300 hover:border-gray-400 hover:shadow-sm'
+            }`}
           >
             {/* 错误栈行头部 */}
             <div
-              className="flex items-start p-3 cursor-pointer"
+              className={`flex items-start p-3 cursor-pointer transition-colors ${
+                isExpanded ? 'bg-blue-50/50' : ''
+              }`}
               onClick={() => toggleExpand(index)}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                  <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded flex-shrink-0">
                     #{index + 1}
                   </span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 truncate">
                     {item.functionName || '(anonymous)'}
                   </span>
                 </div>
                 
                 {/* 文件路径和位置 - 类似浏览器开发者工具 */}
-                <div className="flex items-center gap-2">
-                  <div className="text-sm text-gray-700 font-mono">
+                <div className="flex items-start gap-2 min-w-0">
+                  <div className="text-sm text-gray-700 font-mono min-w-0 flex-1 break-all">
                     {hasMapping ? (
                       <>
-                        <span className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+                        <span className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer break-all">
                           {formatFilePath(item.source)}
                         </span>
-                        <span className="text-gray-500 mx-1">:</span>
-                        <span className="text-gray-900 font-semibold">
+                        <span className="text-gray-500 mx-1 flex-shrink-0">:</span>
+                        <span className="text-gray-900 font-semibold flex-shrink-0">
                           {item.originalLine}
                         </span>
-                        <span className="text-gray-500 mx-1">:</span>
-                        <span className="text-gray-900 font-semibold">
+                        <span className="text-gray-500 mx-1 flex-shrink-0">:</span>
+                        <span className="text-gray-900 font-semibold flex-shrink-0">
                           {item.originalColumn || 0}
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 break-all">
                           {formatFilePath(item.source)}
                         </span>
-                        <span className="text-gray-500 mx-1">:</span>
-                        <span className="text-gray-900 font-semibold">
+                        <span className="text-gray-500 mx-1 flex-shrink-0">:</span>
+                        <span className="text-gray-900 font-semibold flex-shrink-0">
                           {item.line}
                         </span>
-                        <span className="text-gray-500 mx-1">:</span>
-                        <span className="text-gray-900 font-semibold">
+                        <span className="text-gray-500 mx-1 flex-shrink-0">:</span>
+                        <span className="text-gray-900 font-semibold flex-shrink-0">
                           {item.column}
                         </span>
-                        <span className="text-orange-600 text-xs ml-2 italic">
+                        <span className="text-orange-600 text-xs ml-2 italic flex-shrink-0">
                           (未映射)
                         </span>
                       </>
@@ -245,7 +251,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
 
             {/* 详细信息（展开时显示） */}
             {isExpanded && (
-              <div className="border-t border-gray-200 bg-gray-50">
+              <div className="border-t-2 border-blue-200 bg-gradient-to-br from-gray-50 to-blue-50/20">
                 <div className="p-4 space-y-4">
                   {/* 原始源代码位置 - 主要显示 */}
                   {hasMapping ? (
@@ -300,8 +306,8 @@ function ErrorStack({ stack }: ErrorStackProps) {
                         </button>
                       </div>
                       <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
-                        <div className="bg-gray-100 px-3 py-2 border-b border-gray-300">
-                          <span className="text-blue-600 font-mono text-sm">
+                        <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 break-all">
+                          <span className="text-blue-600 font-mono text-sm break-all">
                             {formatFilePath(item.source)}
                           </span>
                         </div>
@@ -320,7 +326,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                           <div className="text-xs text-gray-500 mb-1">
                             编译自:
                           </div>
-                          <div className="text-xs text-gray-600 font-mono">
+                          <div className="text-xs text-gray-600 font-mono break-all">
                             {formatFilePath(item.originalSource)}:{item.line}:{item.column}
                           </div>
                         </div>
@@ -333,8 +339,8 @@ function ErrorStack({ stack }: ErrorStackProps) {
                         编译后位置
                       </div>
                       <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
-                        <div className="bg-gray-100 px-3 py-2 border-b border-gray-300">
-                          <span className="text-gray-600 font-mono text-sm">
+                        <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 break-all">
+                          <span className="text-gray-600 font-mono text-sm break-all">
                             {formatFilePath(item.source)}
                           </span>
                         </div>
@@ -363,6 +369,65 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       </code>
                     </div>
                   </div>
+
+                  {/* 源代码内容显示 */}
+                  {hasMapping && item.content && (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                        源代码内容
+                      </div>
+                      <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+                        <div className="bg-gray-800 px-3 py-2 border-b border-gray-700 flex items-center justify-between">
+                          <span className="text-xs text-gray-400 font-mono">
+                            {formatFilePath(item.source)}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            行 {item.originalLine}
+                          </span>
+                        </div>
+                        <div className="p-4 overflow-x-auto">
+                          <pre className="text-sm text-gray-100 font-mono leading-relaxed">
+                            <code>
+                              {(() => {
+                                const lines = item.content.split('\n')
+                                const targetLine = item.originalLine || 1
+                                // originalLine 是从 1 开始的，转换为数组索引（从 0 开始）
+                                const targetLineIndex = targetLine - 1
+                                const startLine = Math.max(0, targetLineIndex - 5)
+                                const endLine = Math.min(lines.length, targetLineIndex + 6)
+                                const contextLines = lines.slice(startLine, endLine)
+                                
+                                return contextLines.map((line, idx) => {
+                                  const lineNum = startLine + idx + 1
+                                  const isTargetLine = lineNum === targetLine
+                                  
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className={`flex py-0.5 ${
+                                        isTargetLine 
+                                          ? 'bg-yellow-900/30 border-l-2 border-yellow-500 pl-2 -ml-2' 
+                                          : 'pl-2'
+                                      }`}
+                                    >
+                                      <span className={`text-xs w-12 text-right pr-3 select-none ${
+                                        isTargetLine ? 'text-yellow-400 font-bold' : 'text-gray-500'
+                                      }`}>
+                                        {lineNum}
+                                      </span>
+                                      <span className={`flex-1 ${isTargetLine ? 'text-yellow-200 font-semibold' : 'text-gray-300'}`}>
+                                        {line || ' '}
+                                      </span>
+                                    </div>
+                                  )
+                                })
+                              })()}
+                            </code>
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
