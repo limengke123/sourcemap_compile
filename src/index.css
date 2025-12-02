@@ -9,6 +9,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 防止滚动条导致的布局抖动 */
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
+html {
+  /* 确保滚动条始终占用空间，防止布局抖动 */
+  overflow-y: scroll;
 }
 
 /* 动画效果 */
@@ -34,5 +42,38 @@ body {
 
 .animate-in {
   animation: slide-in-from-top 0.3s ease-out, fade-in 0.3s ease-out;
+}
+
+/* 自定义滚动条样式，防止布局抖动 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 文件列表滚动条样式 */
+.file-list-scroll::-webkit-scrollbar-track {
+  background: #dcfce7;
+}
+
+.file-list-scroll::-webkit-scrollbar-thumb {
+  background: #86efac;
+}
+
+.file-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4ade80;
 }
 

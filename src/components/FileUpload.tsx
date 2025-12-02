@@ -43,6 +43,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
         // 处理 ZIP 文件
         const mapFiles = await extractMapFilesFromZip(zipFile)
         if (mapFiles.length > 0) {
+          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -60,6 +61,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
       if (items.length > 0 && items[0].webkitGetAsEntry) {
         const mapFiles = await extractMapFilesFromDirectory(items)
         if (mapFiles.length > 0) {
+          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -130,6 +132,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
         })
 
         if (mapFiles.length > 0) {
+          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -220,6 +223,9 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             </div>
             <p className="text-sm text-gray-500 mt-2">
               支持 .map 文件、ZIP 压缩包或包含 .map 文件的文件夹
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              支持上传任意数量的文件（无限制）
             </p>
           </>
         )}
