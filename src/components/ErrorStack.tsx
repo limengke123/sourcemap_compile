@@ -1,11 +1,16 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react'
 import type { ParsedStackFrame } from '../types'
 
 interface ErrorStackProps {
   stack: ParsedStackFrame[]
 }
 
-function ErrorStack({ stack }: ErrorStackProps) {
+export interface ErrorStackRef {
+  expandAll: () => void
+  collapseAll: () => void
+}
+
+const ErrorStack = forwardRef<ErrorStackRef, ErrorStackProps>(({ stack }, ref: React.ForwardedRef<ErrorStackRef>) => {
   // 默认展开前3项（如果stack长度>=3，则展开0,1,2；否则展开所有项）
   const defaultExpanded = useMemo(() => {
     const count = Math.min(3, stack.length)
@@ -132,6 +137,22 @@ function ErrorStack({ stack }: ErrorStackProps) {
       }
     }
   }
+
+  // 展开所有
+  const expandAll = useCallback(() => {
+    setExpandedIndexes(new Set(Array.from({ length: stack.length }, (_, i) => i)))
+  }, [stack.length])
+
+  // 收起所有
+  const collapseAll = useCallback(() => {
+    setExpandedIndexes(new Set())
+  }, [])
+
+  // 暴露方法给父组件
+  useImperativeHandle(ref, () => ({
+    expandAll,
+    collapseAll
+  }), [expandAll, collapseAll])
 
   return (
     <div className="space-y-2">
@@ -409,7 +430,9 @@ function ErrorStack({ stack }: ErrorStackProps) {
       })}
     </div>
   )
-}
+})
+
+ErrorStack.displayName = 'ErrorStack'
 
 export default ErrorStack
 

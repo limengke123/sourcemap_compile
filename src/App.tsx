@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import FileUpload from './components/FileUpload'
 import ErrorInput from './components/ErrorInput'
-import ErrorStack from './components/ErrorStack'
+import ErrorStack, { type ErrorStackRef } from './components/ErrorStack'
 import ErrorMessage from './components/ErrorMessage'
 import { parseSourceMap } from './utils/sourcemapParser'
 import type { SourceMapFile, ParsedStackFrame } from './types'
@@ -16,6 +16,9 @@ function App() {
   const [copiedAll, setCopiedAll] = useState<boolean>(false)
   const [showCopyAllTooltip, setShowCopyAllTooltip] = useState<boolean>(false)
   const [showScrollToTop, setShowScrollToTop] = useState<boolean>(false)
+  const [showExpandTooltip, setShowExpandTooltip] = useState<boolean>(false)
+  const [showCollapseTooltip, setShowCollapseTooltip] = useState<boolean>(false)
+  const errorStackRef = useRef<ErrorStackRef>(null)
 
   // 监听滚动事件，显示/隐藏回到顶部按钮
   useEffect(() => {
@@ -390,16 +393,78 @@ function App() {
                   Parse Results
                 </h2>
               </div>
-              <button
-                onClick={() => {
-                  copyAllStack()
-                  setShowCopyAllTooltip(false)
-                }}
-                onMouseEnter={() => setShowCopyAllTooltip(true)}
-                onMouseLeave={() => setShowCopyAllTooltip(false)}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
-                aria-label="Copy all"
-              >
+              <div className="flex items-center gap-1">
+                {/* Expand All button */}
+                <button
+                  onClick={() => errorStackRef.current?.expandAll()}
+                  onMouseEnter={() => setShowExpandTooltip(true)}
+                  onMouseLeave={() => setShowExpandTooltip(false)}
+                  className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
+                  aria-label="Expand all"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                  {/* Custom tooltip */}
+                  {showExpandTooltip && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap z-[100] pointer-events-none">
+                      Expand all
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                    </div>
+                  )}
+                </button>
+                
+                {/* Collapse All button */}
+                <button
+                  onClick={() => errorStackRef.current?.collapseAll()}
+                  onMouseEnter={() => setShowCollapseTooltip(true)}
+                  onMouseLeave={() => setShowCollapseTooltip(false)}
+                  className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
+                  aria-label="Collapse all"
+                >
+                  <svg
+                    className="w-5 h-5 rotate-180"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                  {/* Custom tooltip */}
+                  {showCollapseTooltip && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap z-[100] pointer-events-none">
+                      Collapse all
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                    </div>
+                  )}
+                </button>
+                
+                {/* Copy All button */}
+                <button
+                  onClick={() => {
+                    copyAllStack()
+                    setShowCopyAllTooltip(false)
+                  }}
+                  onMouseEnter={() => setShowCopyAllTooltip(true)}
+                  onMouseLeave={() => setShowCopyAllTooltip(false)}
+                  className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-gray-100 relative"
+                  aria-label="Copy all"
+                >
                 {copiedAll ? (
                   <svg
                     className="w-5 h-5 text-green-600"
@@ -436,9 +501,10 @@ function App() {
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
                   </div>
                 )}
-              </button>
+                </button>
+              </div>
             </div>
-            <ErrorStack stack={parsedStack} />
+            <ErrorStack ref={errorStackRef} stack={parsedStack} />
           </div>
         )}
       </div>
