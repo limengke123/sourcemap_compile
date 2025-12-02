@@ -1,9 +1,10 @@
 import { SourceMapConsumer } from 'source-map'
+import type { SourceMapFile, StackFrame, ParsedStackFrame } from '../types'
 
 /**
  * 解析 JSON 格式的错误堆栈
  */
-function parseJSONStack(errorInfo) {
+function parseJSONStack(errorInfo: string): StackFrame[] | null {
   try {
     const trimmed = errorInfo.trim()
     if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) {
@@ -13,12 +14,12 @@ function parseJSONStack(errorInfo) {
     const parsed = JSON.parse(trimmed)
     
     if (Array.isArray(parsed)) {
-      return parsed.map(item => ({
+      return parsed.map((item: any) => ({
         filename: item.filename || item.source || '',
         function: item.function || item.functionName || null,
         line: item.lineno || item.line || 0,
         column: item.colno || item.column || 0,
-      })).filter(item => item.filename && item.line > 0)
+      })).filter((item: StackFrame) => item.filename && item.line > 0)
     }
     
     if (parsed.filename && (parsed.lineno || parsed.line)) {
@@ -39,9 +40,9 @@ function parseJSONStack(errorInfo) {
 /**
  * 解析文本格式的错误堆栈
  */
-function parseTextStack(errorInfo) {
+function parseTextStack(errorInfo: string): StackFrame[] | null {
   const lines = errorInfo.split('\n')
-  const results = []
+  const results: StackFrame[] = []
   
   const patterns = [
     /at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/,
@@ -85,13 +86,13 @@ function parseTextStack(errorInfo) {
 /**
  * 从文件名匹配 sourcemap
  */
-function findMatchingSourceMap(filename, sourceMaps) {
+function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): SourceMapFile | null {
   if (!filename || !sourceMaps || sourceMaps.length === 0) {
     return null
   }
   
   // 标准化文件名
-  const normalize = (name) => {
+  const normalize = (name: string): string => {
     return name
       .replace(/^~\/scripts\//, '')
       .replace(/^.*\//, '')
@@ -134,7 +135,7 @@ function findMatchingSourceMap(filename, sourceMaps) {
     }
     
     for (const source of mapSources) {
-      if (source.includes(targetFile) || filename.includes(source.split('/').pop())) {
+      if (source.includes(targetFile) || filename.includes(source.split('/').pop() || '')) {
         return map
       }
     }
@@ -146,7 +147,7 @@ function findMatchingSourceMap(filename, sourceMaps) {
 /**
  * 使用 sourcemap 解析错误堆栈
  */
-export async function parseSourceMap(sourceMaps, errorInfo) {
+export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: string): Promise<ParsedStackFrame[]> {
   if (!sourceMaps || sourceMaps.length === 0) {
     throw new Error('请先上传 sourcemap 文件')
   }
@@ -168,14 +169,14 @@ export async function parseSourceMap(sourceMaps, errorInfo) {
   console.log('解析到', stackFrames.length, '个堆栈帧')
   
   // 创建 sourcemap consumer 缓存
-  const consumerCache = new Map()
+  const consumerCache = new Map<any, SourceMapConsumer>()
   
-  const getConsumer = async (sourceMapContent) => {
+  const getConsumer = async (sourceMapContent: any): Promise<SourceMapConsumer> => {
     if (consumerCache.has(sourceMapContent)) {
-      return consumerCache.get(sourceMapContent)
+      return consumerCache.get(sourceMapContent)!
     }
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       SourceMapConsumer.with(sourceMapContent, null, (consumer) => {
         consumerCache.set(sourceMapContent, consumer)
         resolve(consumer)
@@ -184,7 +185,7 @@ export async function parseSourceMap(sourceMaps, errorInfo) {
   }
   
   // 解析每个堆栈帧
-  const results = []
+  const results: ParsedStackFrame[] = []
   
   for (const frame of stackFrames) {
     try {
@@ -225,8 +226,8 @@ export async function parseSourceMap(sourceMaps, errorInfo) {
       
       // 智能查询策略：尝试多个列号
       // 因为压缩后的代码可能在同一行有多个映射点，我们需要找到最接近的
-      let originalPosition = null
-      const tryColumns = []
+      let originalPosition: any = null
+      const tryColumns: number[] = []
       
       // 1. 首先尝试精确的列号
       tryColumns.push(queryColumn)
@@ -358,3 +359,4 @@ export async function parseSourceMap(sourceMaps, errorInfo) {
   
   return results
 }
+

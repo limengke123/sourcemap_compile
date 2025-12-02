@@ -1,6 +1,13 @@
 import { useEffect } from 'react'
 
-function ErrorMessage({ message, onClose, autoClose = true, duration = 5000 }) {
+interface ErrorMessageProps {
+  message: string | null
+  onClose?: () => void
+  autoClose?: boolean
+  duration?: number
+}
+
+function ErrorMessage({ message, onClose, autoClose = true, duration = 5000 }: ErrorMessageProps) {
   if (!message) return null
 
   // 自动关闭功能

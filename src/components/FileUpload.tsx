@@ -4,22 +4,28 @@ import {
   extractMapFilesFromDirectory,
   processSingleFile,
 } from '../utils/fileProcessor'
+import type { SourceMapFile } from '../types'
 
-function FileUpload({ onFileUpload, onMultipleFiles }) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
+interface FileUploadProps {
+  onFileUpload: (file: SourceMapFile) => void
+  onMultipleFiles: (files: SourceMapFile[]) => void
+}
 
-  const handleDragOver = useCallback((e) => {
+function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(true)
   }, [])
 
-  const handleDragLeave = useCallback((e) => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
   }, [])
 
-  const handleDrop = useCallback(async (e) => {
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
     setIsProcessing(true)
@@ -81,14 +87,14 @@ function FileUpload({ onFileUpload, onMultipleFiles }) {
         alert('请上传 .map 文件、JSON 文件、ZIP 文件或包含 .map 文件的文件夹')
       }
     } catch (error) {
-      alert('文件处理失败: ' + error.message)
+      alert('文件处理失败: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setIsProcessing(false)
     }
   }, [onFileUpload, onMultipleFiles])
 
-  const handleFileSelect = useCallback(async (e) => {
-    const files = Array.from(e.target.files)
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
     setIsProcessing(true)
@@ -111,13 +117,13 @@ function FileUpload({ onFileUpload, onMultipleFiles }) {
         }
       } else if (files.length > 1 || e.target.hasAttribute('webkitdirectory')) {
         // 处理文件夹（多个文件）
-        const mapFiles = []
+        const mapFiles: SourceMapFile[] = []
         const filePromises = files
           .filter(f => f.name.endsWith('.map') || f.type === 'application/json')
           .map(file => processSingleFile(file))
 
         const results = await Promise.allSettled(filePromises)
-        results.forEach((result, index) => {
+        results.forEach((result) => {
           if (result.status === 'fulfilled' && result.value.length > 0) {
             mapFiles.push(...result.value)
           }
@@ -142,7 +148,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }) {
         }
       }
     } catch (error) {
-      alert('文件处理失败: ' + error.message)
+      alert('文件处理失败: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setIsProcessing(false)
       // 重置 input，允许重复选择同一文件

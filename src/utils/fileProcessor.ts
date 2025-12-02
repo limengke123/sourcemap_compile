@@ -1,12 +1,13 @@
 import JSZip from 'jszip'
+import type { SourceMapFile } from '../types'
 
 /**
  * 从 ZIP 文件中提取所有 .map 文件
  */
-export async function extractMapFilesFromZip(file) {
+export async function extractMapFilesFromZip(file: File): Promise<SourceMapFile[]> {
   try {
     const zip = await JSZip.loadAsync(file)
-    const mapFiles = []
+    const mapFiles: SourceMapFile[] = []
     
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
       if (!zipEntry.dir && relativePath.endsWith('.map')) {
@@ -25,31 +26,31 @@ export async function extractMapFilesFromZip(file) {
     
     return mapFiles
   } catch (error) {
-    throw new Error('ZIP 文件解析失败: ' + error.message)
+    throw new Error('ZIP 文件解析失败: ' + (error instanceof Error ? error.message : String(error)))
   }
 }
 
 /**
  * 从文件夹中提取所有 .map 文件
  */
-export async function extractMapFilesFromDirectory(items) {
-  const mapFiles = []
-  const filePromises = []
+export async function extractMapFilesFromDirectory(items: DataTransferItem[]): Promise<SourceMapFile[]> {
+  const mapFiles: SourceMapFile[] = []
+  const filePromises: Promise<void>[] = []
   
   // 递归处理所有文件项
-  async function processEntry(entry) {
+  async function processEntry(entry: FileSystemEntry): Promise<void> {
     if (entry.isFile) {
-      const file = await new Promise((resolve, reject) => {
-        entry.file(resolve, reject)
+      const file = await new Promise<File>((resolve, reject) => {
+        (entry as FileSystemFileEntry).file(resolve, reject)
       })
       
       if (file.name.endsWith('.map') || file.type === 'application/json') {
         filePromises.push(
-          new Promise((resolve) => {
+          new Promise<void>((resolve) => {
             const reader = new FileReader()
             reader.onload = (e) => {
               try {
-                const content = JSON.parse(e.target.result)
+                const content = JSON.parse(e.target?.result as string)
                 mapFiles.push({
                   name: file.name,
                   content: content,
@@ -66,8 +67,8 @@ export async function extractMapFilesFromDirectory(items) {
         )
       }
     } else if (entry.isDirectory) {
-      const reader = entry.createReader()
-      const entries = await new Promise((resolve, reject) => {
+      const reader = (entry as FileSystemDirectoryEntry).createReader()
+      const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
         reader.readEntries(resolve, reject)
       })
       
@@ -88,11 +89,11 @@ export async function extractMapFilesFromDirectory(items) {
       const file = item.getAsFile()
       if (file && (file.name.endsWith('.map') || file.type === 'application/json')) {
         filePromises.push(
-          new Promise((resolve) => {
+          new Promise<void>((resolve) => {
             const reader = new FileReader()
             reader.onload = (e) => {
               try {
-                const content = JSON.parse(e.target.result)
+                const content = JSON.parse(e.target?.result as string)
                 mapFiles.push({
                   name: file.name,
                   content: content,
@@ -118,12 +119,12 @@ export async function extractMapFilesFromDirectory(items) {
 /**
  * 处理单个文件（可能是 .map 文件）
  */
-export function processSingleFile(file) {
+export function processSingleFile(file: File): Promise<SourceMapFile[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const content = JSON.parse(e.target.result)
+        const content = JSON.parse(e.target?.result as string)
         resolve([{
           name: file.name,
           content: content,

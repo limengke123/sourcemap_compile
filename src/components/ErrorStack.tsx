@@ -1,7 +1,12 @@
 import { useState } from 'react'
+import type { ParsedStackFrame } from '../types'
 
-function ErrorStack({ stack }) {
-  const [expandedIndex, setExpandedIndex] = useState(0) // 默认展开第一个
+interface ErrorStackProps {
+  stack: ParsedStackFrame[]
+}
+
+function ErrorStack({ stack }: ErrorStackProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0) // 默认展开第一个
 
   if (!stack || stack.length === 0) {
     return (
@@ -11,12 +16,12 @@ function ErrorStack({ stack }) {
     )
   }
 
-  const toggleExpand = (index) => {
+  const toggleExpand = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index)
   }
   
   // 格式化文件路径，使其更易读
-  const formatFilePath = (path) => {
+  const formatFilePath = (path: string): string => {
     if (!path) return ''
     // 移除 ~/scripts/ 前缀
     return path.replace(/^~\/scripts\//, '')
@@ -194,3 +199,4 @@ function ErrorStack({ stack }) {
 }
 
 export default ErrorStack
+

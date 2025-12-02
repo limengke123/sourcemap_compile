@@ -4,21 +4,22 @@ import ErrorInput from './components/ErrorInput'
 import ErrorStack from './components/ErrorStack'
 import ErrorMessage from './components/ErrorMessage'
 import { parseSourceMap } from './utils/sourcemapParser'
+import type { SourceMapFile, ParsedStackFrame } from './types'
 
 function App() {
-  const [sourceMaps, setSourceMaps] = useState([])
-  const [errorInfo, setErrorInfo] = useState('')
-  const [parsedStack, setParsedStack] = useState(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [errorMessage, setErrorMessage] = useState(null)
+  const [sourceMaps, setSourceMaps] = useState<SourceMapFile[]>([])
+  const [errorInfo, setErrorInfo] = useState<string>('')
+  const [parsedStack, setParsedStack] = useState<ParsedStackFrame[] | null>(null)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleFileUpload = useCallback((file) => {
+  const handleFileUpload = useCallback((file: SourceMapFile) => {
     // 单个文件上传
     setSourceMaps([file])
     setParsedStack(null)
   }, [])
 
-  const handleMultipleFiles = useCallback((files) => {
+  const handleMultipleFiles = useCallback((files: SourceMapFile[]) => {
     // 多个文件上传
     setSourceMaps(files)
     setParsedStack(null)
@@ -52,7 +53,7 @@ function App() {
       setErrorMessage(null) // 清除错误信息
     } catch (error) {
       console.error('解析失败:', error)
-      const errorMsg = error.message || '未知错误'
+      const errorMsg = error instanceof Error ? error.message : '未知错误'
       // 如果错误信息很长，截断并提示查看控制台
       if (errorMsg.length > 1000) {
         setErrorMessage(

@@ -1,4 +1,9 @@
-function ErrorInput({ value, onChange }) {
+interface ErrorInputProps {
+  value: string
+  onChange: (value: string) => void
+}
+
+function ErrorInput({ value, onChange }: ErrorInputProps) {
   return (
     <div>
       <textarea

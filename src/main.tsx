@@ -1,11 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
+import App from './App'
 import './index.css'
 import { SourceMapConsumer } from 'source-map'
 
 // 初始化 source-map 的 WASM 文件
-async function initializeSourceMap() {
+async function initializeSourceMap(): Promise<void> {
   try {
     // 方法1: 从 public 目录加载 WASM 文件
     const wasmResponse = await fetch('/lib/mappings.wasm')
@@ -50,7 +50,12 @@ async function initializeSourceMap() {
 
 // 初始化后再渲染应用
 initializeSourceMap().then(() => {
-  ReactDOM.createRoot(document.getElementById('root')).render(
+  const rootElement = document.getElementById('root')
+  if (!rootElement) {
+    throw new Error('找不到 root 元素')
+  }
+  
+  ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <App />
     </React.StrictMode>,
