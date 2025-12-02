@@ -12,6 +12,7 @@ function App() {
   const [parsedStack, setParsedStack] = useState<ParsedStackFrame[] | null>(null)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false) // 默认折叠
 
   const handleFileUpload = useCallback((file: SourceMapFile) => {
     // 单个文件上传
@@ -22,6 +23,16 @@ function App() {
   const handleMultipleFiles = useCallback((files: SourceMapFile[]) => {
     // 多个文件上传
     setSourceMaps(files)
+    setParsedStack(null)
+  }, [])
+
+  const handleRemoveFile = useCallback((index: number) => {
+    setSourceMaps(prev => prev.filter((_, i) => i !== index))
+    setParsedStack(null)
+  }, [])
+
+  const handleClearAll = useCallback(() => {
+    setSourceMaps([])
     setParsedStack(null)
   }, [])
 
@@ -96,13 +107,79 @@ function App() {
             {sourceMaps.length > 0 && (
               <div className="mt-4">
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                  <p className="text-sm text-green-800">
-                    ✓ 已加载 {sourceMaps.length} 个 SourceMap 文件
-                  </p>
-                  {sourceMaps.length > 1 && (
-                    <p className="text-xs text-green-700 mt-1">
-                      系统将自动为错误堆栈中的每个文件匹配对应的 sourcemap
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setIsFileListExpanded(!isFileListExpanded)}
+                      className="flex items-center gap-2 text-sm text-green-800 font-medium hover:text-green-900 transition-colors"
+                    >
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isFileListExpanded ? 'rotate-90' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                      <span>✓ 已加载 {sourceMaps.length} 个 SourceMap 文件</span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {sourceMaps.length > 1 && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-xs text-red-600 hover:text-red-700 hover:underline"
+                        >
+                          清除所有
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {isFileListExpanded && (
+                    <>
+                      <div className="space-y-2 mt-3">
+                        {sourceMaps.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-white rounded px-3 py-2 border border-green-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-800 truncate font-mono">
+                                {file.name}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFile(index)}
+                              className="ml-2 flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors"
+                              title="移除文件"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {sourceMaps.length > 1 && (
+                        <p className="text-xs text-green-700 mt-2">
+                          系统将自动为错误堆栈中的每个文件匹配对应的 sourcemap
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
