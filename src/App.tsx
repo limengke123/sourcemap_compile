@@ -13,6 +13,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false) // 默认折叠
+  const [copiedAll, setCopiedAll] = useState<boolean>(false) // 记录是否复制了全部
 
   const handleFileUpload = useCallback((file: SourceMapFile) => {
     // 单个文件上传
@@ -35,6 +36,103 @@ function App() {
     setSourceMaps([])
     setParsedStack(null)
   }, [])
+
+  // 格式化路径为 /src/ 开头的格式
+  const formatPathForCopy = useCallback((path: string): string => {
+    if (!path) return ''
+    
+    // 先移除所有相对路径前缀
+    let normalized = path
+      .replace(/^\.\.\/\.\.\//g, '') // 移除 ../../ 
+      .replace(/^\.\.\//g, '') // 移除 ../
+      .replace(/^\.\//g, '') // 移除 ./
+      .replace(/^~\/scripts\//, '') // 移除 ~/scripts/
+    
+    // 移除开头的所有相对路径（可能有多层）
+    while (normalized.startsWith('../')) {
+      normalized = normalized.substring(3)
+    }
+    
+    // 查找 src 目录的位置
+    const srcIndex = normalized.indexOf('/src/')
+    const srcIndexAlt = normalized.indexOf('src/')
+    
+    if (srcIndex !== -1) {
+      // 找到 /src/，保留从 /src/ 开始的部分
+      normalized = normalized.substring(srcIndex)
+    } else if (srcIndexAlt !== -1) {
+      // 找到 src/（不带前导斜杠），添加前导斜杠
+      normalized = '/' + normalized.substring(srcIndexAlt)
+    }
+    // 如果路径中没有 src，就使用清理后的路径，确保以 / 开头
+    else if (!normalized.startsWith('/')) {
+      normalized = '/' + normalized
+    }
+    
+    return normalized
+  }, [])
+
+  // 复制所有错误栈
+  const copyAllStack = useCallback(async () => {
+    if (!parsedStack || parsedStack.length === 0) return
+
+    try {
+      const lines = parsedStack.map((item) => {
+        const path = formatPathForCopy(item.source)
+        const line = item.hasMapping && item.originalLine !== null 
+          ? item.originalLine 
+          : item.line
+        const column = item.hasMapping && item.originalColumn !== null 
+          ? item.originalColumn 
+          : item.column
+        
+        return `${path}:${line}:${column}`
+      })
+      
+      const textToCopy = lines.join('\n')
+      
+      await navigator.clipboard.writeText(textToCopy)
+      
+      // 显示复制成功提示
+      setCopiedAll(true)
+      setTimeout(() => {
+        setCopiedAll(false)
+      }, 2000)
+    } catch (error) {
+      console.error('复制失败:', error)
+      // 降级方案：使用传统方法
+      try {
+        const lines = parsedStack.map((item) => {
+          const path = formatPathForCopy(item.source)
+          const line = item.hasMapping && item.originalLine !== null 
+            ? item.originalLine 
+            : item.line
+          const column = item.hasMapping && item.originalColumn !== null 
+            ? item.originalColumn 
+            : item.column
+          
+          return `${path}:${line}:${column}`
+        })
+        
+        const textToCopy = lines.join('\n')
+        const textArea = document.createElement('textarea')
+        textArea.value = textToCopy
+        textArea.style.position = 'fixed'
+        textArea.style.opacity = '0'
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        
+        setCopiedAll(true)
+        setTimeout(() => {
+          setCopiedAll(false)
+        }, 2000)
+      } catch (fallbackError) {
+        console.error('降级复制方案也失败:', fallbackError)
+      }
+    }
+  }, [parsedStack, formatPathForCopy])
 
   const handleParse = useCallback(async () => {
     // 清除之前的错误信息
@@ -206,9 +304,46 @@ function App() {
 
         {parsedStack && (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              解析结果
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                解析结果
+              </h2>
+              <button
+                onClick={copyAllStack}
+                className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
+                title="复制所有错误栈"
+              >
+                {copiedAll ? (
+                  <svg
+                    className="w-4 h-4 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
             <ErrorStack stack={parsedStack} />
           </div>
         )}
