@@ -71,6 +71,35 @@ pnpm preview
 npm run preview
 ```
 
+## 🚀 Deployment
+
+### Automatic Deployment to GitHub Pages
+
+This project includes a GitHub Actions workflow that automatically builds and deploys to GitHub Pages when you push to the `main` branch.
+
+**Setup Steps:**
+
+1. **Enable GitHub Pages** in your repository settings:
+   - Go to `Settings` → `Pages`
+   - Under "Source", select `GitHub Actions`
+
+2. **Push to main branch** - The workflow will automatically:
+   - ✅ Install dependencies
+   - ✅ Build the project
+   - ✅ Deploy to GitHub Pages
+
+3. **Access your site** at:
+   ```
+   https://<your-username>.github.io/sourcemap_compile/
+   ```
+
+**Manual Trigger:**
+
+You can also manually trigger the deployment by going to:
+- `Actions` tab → `Build and Deploy to GitHub Pages` → `Run workflow`
+
+The workflow file is located at `.github/workflows/deploy.yml`
+
 ## 📖 How to Use
 
 ### Step 1: Upload SourceMap Files
