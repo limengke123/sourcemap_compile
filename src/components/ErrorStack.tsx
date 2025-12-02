@@ -7,6 +7,7 @@ interface ErrorStackProps {
 
 function ErrorStack({ stack }: ErrorStackProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0) // 默认展开第一个
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null) // 记录已复制的索引
 
   if (!stack || stack.length === 0) {
     return (
@@ -25,6 +26,93 @@ function ErrorStack({ stack }: ErrorStackProps) {
     if (!path) return ''
     // 移除 ~/scripts/ 前缀
     return path.replace(/^~\/scripts\//, '')
+  }
+
+  // 格式化路径为 /src/ 开头的格式
+  const formatPathForCopy = (path: string): string => {
+    if (!path) return ''
+    
+    // 先移除所有相对路径前缀
+    let normalized = path
+      .replace(/^\.\.\/\.\.\//g, '') // 移除 ../../ 
+      .replace(/^\.\.\//g, '') // 移除 ../
+      .replace(/^\.\//g, '') // 移除 ./
+      .replace(/^~\/scripts\//, '') // 移除 ~/scripts/
+    
+    // 移除开头的所有相对路径（可能有多层）
+    while (normalized.startsWith('../')) {
+      normalized = normalized.substring(3)
+    }
+    
+    // 查找 src 目录的位置
+    const srcIndex = normalized.indexOf('/src/')
+    const srcIndexAlt = normalized.indexOf('src/')
+    
+    if (srcIndex !== -1) {
+      // 找到 /src/，保留从 /src/ 开始的部分
+      normalized = normalized.substring(srcIndex)
+    } else if (srcIndexAlt !== -1) {
+      // 找到 src/（不带前导斜杠），添加前导斜杠
+      normalized = '/' + normalized.substring(srcIndexAlt)
+    }
+    // 如果路径中没有 src，就使用清理后的路径，确保以 / 开头
+    else if (!normalized.startsWith('/')) {
+      normalized = '/' + normalized
+    }
+    
+    return normalized
+  }
+
+  // 复制到剪贴板
+  const copyToClipboard = async (item: ParsedStackFrame, index: number) => {
+    try {
+      const path = formatPathForCopy(item.source)
+      const line = item.hasMapping && item.originalLine !== null 
+        ? item.originalLine 
+        : item.line
+      const column = item.hasMapping && item.originalColumn !== null 
+        ? item.originalColumn 
+        : item.column
+      
+      const textToCopy = `${path}:${line}:${column}`
+      
+      await navigator.clipboard.writeText(textToCopy)
+      
+      // 显示复制成功提示
+      setCopiedIndex(index)
+      setTimeout(() => {
+        setCopiedIndex(null)
+      }, 2000)
+    } catch (error) {
+      console.error('复制失败:', error)
+      // 降级方案：使用传统方法
+      try {
+        const path = formatPathForCopy(item.source)
+        const line = item.hasMapping && item.originalLine !== null 
+          ? item.originalLine 
+          : item.line
+        const column = item.hasMapping && item.originalColumn !== null 
+          ? item.originalColumn 
+          : item.column
+        
+        const textToCopy = `${path}:${line}:${column}`
+        const textArea = document.createElement('textarea')
+        textArea.value = textToCopy
+        textArea.style.position = 'fixed'
+        textArea.style.opacity = '0'
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        
+        setCopiedIndex(index)
+        setTimeout(() => {
+          setCopiedIndex(null)
+        }, 2000)
+      } catch (fallbackError) {
+        console.error('降级复制方案也失败:', fallbackError)
+      }
+    }
   }
 
   return (
@@ -54,39 +142,80 @@ function ErrorStack({ stack }: ErrorStackProps) {
                 </div>
                 
                 {/* 文件路径和位置 - 类似浏览器开发者工具 */}
-                <div className="text-sm text-gray-700 font-mono">
-                  {hasMapping ? (
-                    <>
-                      <span className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
-                        {formatFilePath(item.source)}
-                      </span>
-                      <span className="text-gray-500 mx-1">:</span>
-                      <span className="text-gray-900 font-semibold">
-                        {item.originalLine}
-                      </span>
-                      <span className="text-gray-500 mx-1">:</span>
-                      <span className="text-gray-900 font-semibold">
-                        {item.originalColumn || 0}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-gray-600">
-                        {formatFilePath(item.source)}
-                      </span>
-                      <span className="text-gray-500 mx-1">:</span>
-                      <span className="text-gray-900 font-semibold">
-                        {item.line}
-                      </span>
-                      <span className="text-gray-500 mx-1">:</span>
-                      <span className="text-gray-900 font-semibold">
-                        {item.column}
-                      </span>
-                      <span className="text-orange-600 text-xs ml-2 italic">
-                        (未映射)
-                      </span>
-                    </>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-700 font-mono">
+                    {hasMapping ? (
+                      <>
+                        <span className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+                          {formatFilePath(item.source)}
+                        </span>
+                        <span className="text-gray-500 mx-1">:</span>
+                        <span className="text-gray-900 font-semibold">
+                          {item.originalLine}
+                        </span>
+                        <span className="text-gray-500 mx-1">:</span>
+                        <span className="text-gray-900 font-semibold">
+                          {item.originalColumn || 0}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-gray-600">
+                          {formatFilePath(item.source)}
+                        </span>
+                        <span className="text-gray-500 mx-1">:</span>
+                        <span className="text-gray-900 font-semibold">
+                          {item.line}
+                        </span>
+                        <span className="text-gray-500 mx-1">:</span>
+                        <span className="text-gray-900 font-semibold">
+                          {item.column}
+                        </span>
+                        <span className="text-orange-600 text-xs ml-2 italic">
+                          (未映射)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {/* 复制按钮 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      copyToClipboard(item, index)
+                    }}
+                    className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
+                    title="复制文件路径"
+                  >
+                    {copiedIndex === index ? (
+                      <svg
+                        className="w-4 h-4 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
               
@@ -121,8 +250,54 @@ function ErrorStack({ stack }: ErrorStackProps) {
                   {/* 原始源代码位置 - 主要显示 */}
                   {hasMapping ? (
                     <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                        原始源代码位置
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                          原始源代码位置
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            copyToClipboard(item, index)
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
+                          title="复制文件路径"
+                        >
+                          {copiedIndex === index ? (
+                            <>
+                              <svg
+                                className="w-3 h-3 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              <span className="text-green-600">已复制</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <span>复制</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                       <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
                         <div className="bg-gray-100 px-3 py-2 border-b border-gray-300">
