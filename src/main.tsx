@@ -4,55 +4,49 @@ import App from './App'
 import './index.css'
 import { SourceMapConsumer } from 'source-map'
 
-// 初始化 source-map 的 WASM 文件
+// Initialize source-map WASM file
 async function initializeSourceMap(): Promise<void> {
   try {
-    // 方法1: 从 public 目录加载 WASM 文件
+    // Method 1: Load WASM file from public directory
     const wasmResponse = await fetch('/lib/mappings.wasm')
     if (wasmResponse.ok) {
       const wasmBuffer = await wasmResponse.arrayBuffer()
       SourceMapConsumer.initialize({
         'lib/mappings.wasm': wasmBuffer,
       })
-      console.log('SourceMap WASM 初始化成功（从 public 目录）')
       return
     }
-    throw new Error('无法从 public 目录加载 WASM')
+    throw new Error('Unable to load WASM from public directory')
   } catch (error) {
-    console.warn('方法1失败，尝试方法2:', error)
     try {
-      // 方法2: 从 node_modules 加载（开发环境）
+      // Method 2: Load from node_modules (development environment)
       const wasmResponse = await fetch('/node_modules/source-map/lib/mappings.wasm')
       if (wasmResponse.ok) {
         const wasmBuffer = await wasmResponse.arrayBuffer()
         SourceMapConsumer.initialize({
           'lib/mappings.wasm': wasmBuffer,
         })
-        console.log('SourceMap WASM 初始化成功（从 node_modules）')
         return
       }
-      throw new Error('无法从 node_modules 加载 WASM')
+      throw new Error('Unable to load WASM from node_modules')
     } catch (error2) {
-      console.warn('SourceMap WASM 初始化失败，将使用纯 JS 模式:', error2)
-      // 方法3: 使用纯 JS 模式（性能较差但可用）
+      // Method 3: Use pure JS mode (slower performance but available)
       try {
         SourceMapConsumer.initialize({
           'lib/mappings.wasm': null,
         })
-        console.log('SourceMap 使用纯 JS 模式（性能可能较慢）')
       } catch (e) {
-        console.error('无法初始化 SourceMap:', e)
         throw e
       }
     }
   }
 }
 
-// 初始化后再渲染应用
+// Render app after initialization
 initializeSourceMap().then(() => {
   const rootElement = document.getElementById('root')
   if (!rootElement) {
-    throw new Error('找不到 root 元素')
+    throw new Error('Root element not found')
   }
   
   ReactDOM.createRoot(rootElement).render(

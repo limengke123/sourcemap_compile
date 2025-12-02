@@ -12,17 +12,17 @@ function App() {
   const [parsedStack, setParsedStack] = useState<ParsedStackFrame[] | null>(null)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false) // 默认折叠
-  const [copiedAll, setCopiedAll] = useState<boolean>(false) // 记录是否复制了全部
+  const [isFileListExpanded, setIsFileListExpanded] = useState<boolean>(false)
+  const [copiedAll, setCopiedAll] = useState<boolean>(false)
 
   const handleFileUpload = useCallback((file: SourceMapFile) => {
-    // 单个文件上传
+    // Single file upload
     setSourceMaps([file])
     setParsedStack(null)
   }, [])
 
   const handleMultipleFiles = useCallback((files: SourceMapFile[]) => {
-    // 多个文件上传
+    // Multiple files upload
     setSourceMaps(files)
     setParsedStack(null)
   }, [])
@@ -37,34 +37,34 @@ function App() {
     setParsedStack(null)
   }, [])
 
-  // 格式化路径为 /src/ 开头的格式
+  // Format path to start with /src/
   const formatPathForCopy = useCallback((path: string): string => {
     if (!path) return ''
     
-    // 先移除所有相对路径前缀
+    // Remove all relative path prefixes
     let normalized = path
-      .replace(/^\.\.\/\.\.\//g, '') // 移除 ../../ 
-      .replace(/^\.\.\//g, '') // 移除 ../
-      .replace(/^\.\//g, '') // 移除 ./
-      .replace(/^~\/scripts\//, '') // 移除 ~/scripts/
+      .replace(/^\.\.\/\.\.\//g, '')
+      .replace(/^\.\.\//g, '')
+      .replace(/^\.\//g, '')
+      .replace(/^~\/scripts\//, '')
     
-    // 移除开头的所有相对路径（可能有多层）
+    // Remove all leading relative paths (may have multiple layers)
     while (normalized.startsWith('../')) {
       normalized = normalized.substring(3)
     }
     
-    // 查找 src 目录的位置
+    // Find src directory position
     const srcIndex = normalized.indexOf('/src/')
     const srcIndexAlt = normalized.indexOf('src/')
     
     if (srcIndex !== -1) {
-      // 找到 /src/，保留从 /src/ 开始的部分
+      // Found /src/, keep from /src/ onwards
       normalized = normalized.substring(srcIndex)
     } else if (srcIndexAlt !== -1) {
-      // 找到 src/（不带前导斜杠），添加前导斜杠
+      // Found src/ (without leading slash), add leading slash
       normalized = '/' + normalized.substring(srcIndexAlt)
     }
-    // 如果路径中没有 src，就使用清理后的路径，确保以 / 开头
+    // If no src in path, use cleaned path, ensure starts with /
     else if (!normalized.startsWith('/')) {
       normalized = '/' + normalized
     }
@@ -72,7 +72,7 @@ function App() {
     return normalized
   }, [])
 
-  // 复制所有错误栈
+  // Copy all stack frames
   const copyAllStack = useCallback(async () => {
     if (!parsedStack || parsedStack.length === 0) return
 
@@ -93,14 +93,13 @@ function App() {
       
       await navigator.clipboard.writeText(textToCopy)
       
-      // 显示复制成功提示
+      // Show copy success indicator
       setCopiedAll(true)
       setTimeout(() => {
         setCopiedAll(false)
       }, 2000)
     } catch (error) {
-      console.error('复制失败:', error)
-      // 降级方案：使用传统方法
+      // Fallback: use traditional method
       try {
         const lines = parsedStack.map((item) => {
           const path = formatPathForCopy(item.source)
@@ -129,44 +128,42 @@ function App() {
           setCopiedAll(false)
         }, 2000)
       } catch (fallbackError) {
-        console.error('降级复制方案也失败:', fallbackError)
       }
     }
   }, [parsedStack, formatPathForCopy])
 
   const handleParse = useCallback(async () => {
-    // 清除之前的错误信息
+    // Clear previous error message
     setErrorMessage(null)
 
     if (!sourceMaps || sourceMaps.length === 0) {
-      setErrorMessage('请先上传 sourcemap 文件')
+      setErrorMessage('Please upload sourcemap files first')
       return
     }
     if (!errorInfo.trim()) {
-      setErrorMessage('请输入错误信息')
+      setErrorMessage('Please enter error information')
       return
     }
 
-    // 验证所有 sourcemap 文件
+    // Validate all sourcemap files
     const validMaps = sourceMaps.filter(map => map && map.content)
     if (validMaps.length === 0) {
-      setErrorMessage('没有有效的 sourcemap 文件')
+      setErrorMessage('No valid sourcemap files found')
       return
     }
 
     setIsProcessing(true)
     try {
-      // 传入所有 sourcemap 文件，系统会自动匹配
+      // Parse with all sourcemap files, system will auto-match
       const result = await parseSourceMap(validMaps, errorInfo)
       setParsedStack(result)
-      setErrorMessage(null) // 清除错误信息
+      setErrorMessage(null)
     } catch (error) {
-      console.error('解析失败:', error)
-      const errorMsg = error instanceof Error ? error.message : '未知错误'
-      // 如果错误信息很长，截断并提示查看控制台
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      // Truncate long error messages
       if (errorMsg.length > 1000) {
         setErrorMessage(
-          errorMsg.substring(0, 1000) + '\n\n...（完整错误信息请查看浏览器控制台 F12）'
+          errorMsg.substring(0, 1000) + '\n\n...(See browser console F12 for full error)'
         )
       } else {
         setErrorMessage(errorMsg)
@@ -192,10 +189,10 @@ function App() {
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
-              SourceMap 错误解析工具
+              TraceMap
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              快速定位生产环境错误位置
+              Error tracing & source mapping
             </p>
           </div>
         </header>
@@ -209,7 +206,7 @@ function App() {
                 </svg>
               </div>
               <h2 className="text-lg font-semibold text-gray-800">
-                1. 上传 SourceMap 文件
+                1. Upload SourceMap Files
               </h2>
             </div>
             <div className="flex-1">
@@ -244,7 +241,7 @@ function App() {
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                      <span className="font-semibold">已加载 {sourceMaps.length} 个 SourceMap 文件</span>
+                      <span className="font-semibold">{sourceMaps.length} SourceMap file{sourceMaps.length > 1 ? 's' : ''} loaded</span>
                     </button>
                     <div className="flex items-center gap-2">
                       {sourceMaps.length > 1 && (
@@ -252,7 +249,7 @@ function App() {
                           onClick={handleClearAll}
                           className="text-xs text-red-600 hover:text-red-700 hover:underline"
                         >
-                          清除所有
+                          Clear All
                         </button>
                       )}
                     </div>
@@ -283,7 +280,7 @@ function App() {
                           <button
                             onClick={() => handleRemoveFile(index)}
                             className="ml-2 flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200 opacity-0 group-hover:opacity-100"
-                            title="移除文件"
+                            title="Remove file"
                           >
                             <svg
                               className="w-4 h-4"
@@ -304,7 +301,7 @@ function App() {
                     </div>
                     {sourceMaps.length > 1 && (
                       <p className="text-xs text-green-700 mt-2">
-                        系统将自动为错误堆栈中的每个文件匹配对应的 sourcemap
+                        System will automatically match sourcemaps for each file in the error stack
                       </p>
                     )}
                   </div>
@@ -321,7 +318,7 @@ function App() {
                 </svg>
               </div>
               <h2 className="text-lg font-semibold text-gray-800">
-                2. 输入错误信息
+                2. Enter Error Information
               </h2>
             </div>
             <div className="flex-1">
@@ -346,14 +343,14 @@ function App() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>解析中...</span>
+                <span>Parsing...</span>
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
-                <span>解析错误栈</span>
+                <span>Parse Stack Trace</span>
               </>
             )}
           </button>
@@ -369,13 +366,13 @@ function App() {
                   </svg>
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800">
-                  解析结果
+                  Parse Results
                 </h2>
               </div>
               <button
                 onClick={copyAllStack}
                 className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 transform hover:scale-110"
-                title="复制所有错误栈"
+                title="Copy all stack traces"
               >
                 {copiedAll ? (
                   <svg

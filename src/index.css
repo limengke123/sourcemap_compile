@@ -9,7 +9,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* 防止滚动条导致的布局抖动 */
+  /* Prevent layout shift from scrollbar */
   scrollbar-gutter: stable;
   overflow-y: scroll;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
@@ -20,11 +20,11 @@ code, pre, .font-mono {
 }
 
 html {
-  /* 确保滚动条始终占用空间，防止布局抖动 */
+  /* Ensure scrollbar always takes up space to prevent layout shift */
   overflow-y: scroll;
 }
 
-/* 动画效果 */
+/* Animation effects */
 @keyframes slide-in-from-top {
   from {
     transform: translateY(-100%);
@@ -81,7 +81,7 @@ html {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
-/* 自定义滚动条样式，防止布局抖动 */
+/* Custom scrollbar styles to prevent layout shift */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -101,7 +101,7 @@ html {
   background: #94a3b8;
 }
 
-/* 文件列表滚动条样式 */
+/* File list scrollbar styles */
 .file-list-scroll::-webkit-scrollbar-track {
   background: #dcfce7;
 }

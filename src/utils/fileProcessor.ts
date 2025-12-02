@@ -2,7 +2,7 @@ import JSZip from 'jszip'
 import type { SourceMapFile } from '../types'
 
 /**
- * 从 ZIP 文件中提取所有 .map 文件
+ * Extract all .map files from ZIP archive
  */
 export async function extractMapFilesFromZip(file: File): Promise<SourceMapFile[]> {
   try {
@@ -19,25 +19,25 @@ export async function extractMapFilesFromZip(file: File): Promise<SourceMapFile[
             content: jsonContent,
           })
         } catch (e) {
-          console.warn(`无法解析文件 ${relativePath}:`, e)
+          // Ignore parsing errors
         }
       }
     }
     
     return mapFiles
   } catch (error) {
-    throw new Error('ZIP 文件解析失败: ' + (error instanceof Error ? error.message : String(error)))
+    throw new Error('ZIP file parsing failed: ' + (error instanceof Error ? error.message : String(error)))
   }
 }
 
 /**
- * 从文件夹中提取所有 .map 文件
+ * Extract all .map files from directory
  */
 export async function extractMapFilesFromDirectory(items: DataTransferItem[]): Promise<SourceMapFile[]> {
   const mapFiles: SourceMapFile[] = []
   const filePromises: Promise<void>[] = []
   
-  // 递归处理所有文件项
+  // Recursively process all file entries
   async function processEntry(entry: FileSystemEntry): Promise<void> {
     if (entry.isFile) {
       const file = await new Promise<File>((resolve, reject) => {
@@ -57,7 +57,7 @@ export async function extractMapFilesFromDirectory(items: DataTransferItem[]): P
                 })
                 resolve()
               } catch (error) {
-                console.warn(`无法解析文件 ${file.name}:`, error)
+                // Ignore parsing errors
                 resolve()
               }
             }
@@ -78,7 +78,7 @@ export async function extractMapFilesFromDirectory(items: DataTransferItem[]): P
     }
   }
   
-  // 处理所有拖拽项
+  // Process all dragged items
   for (const item of items) {
     if (item.webkitGetAsEntry) {
       const entry = item.webkitGetAsEntry()
@@ -100,7 +100,7 @@ export async function extractMapFilesFromDirectory(items: DataTransferItem[]): P
                 })
                 resolve()
               } catch (error) {
-                console.warn(`无法解析文件 ${file.name}:`, error)
+                // Ignore parsing errors
                 resolve()
               }
             }
@@ -117,7 +117,7 @@ export async function extractMapFilesFromDirectory(items: DataTransferItem[]): P
 }
 
 /**
- * 处理单个文件（可能是 .map 文件）
+ * Process single file (may be .map file)
  */
 export function processSingleFile(file: File): Promise<SourceMapFile[]> {
   return new Promise((resolve, reject) => {
@@ -130,10 +130,10 @@ export function processSingleFile(file: File): Promise<SourceMapFile[]> {
           content: content,
         }])
       } catch (error) {
-        reject(new Error('文件格式错误，请上传有效的 JSON 格式的 sourcemap 文件'))
+        reject(new Error('File format error, please upload a valid JSON format sourcemap file'))
       }
     }
-    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.onerror = () => reject(new Error('File read failed'))
     reader.readAsText(file)
   })
 }

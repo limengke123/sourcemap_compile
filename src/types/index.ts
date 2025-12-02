@@ -1,6 +1,6 @@
 export interface SourceMapFile {
   name: string
-  content: any // source-map 的 SourceMap 类型
+  content: any // source-map SourceMap type
 }
 
 export interface StackFrame {
@@ -19,6 +19,6 @@ export interface ParsedStackFrame {
   line: number
   column: number
   hasMapping: boolean
-  content: string | null // 原始源代码内容
+  content: string | null // Original source code content
 }
 

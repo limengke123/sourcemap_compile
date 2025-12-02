@@ -6,13 +6,13 @@ interface ErrorStackProps {
 }
 
 function ErrorStack({ stack }: ErrorStackProps) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0) // 默认展开第一个
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null) // 记录已复制的索引
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   if (!stack || stack.length === 0) {
     return (
       <div className="text-gray-500 text-center py-8">
-        未找到匹配的错误栈信息
+        No matching stack trace information found
       </div>
     )
   }
@@ -21,41 +21,41 @@ function ErrorStack({ stack }: ErrorStackProps) {
     setExpandedIndex(expandedIndex === index ? null : index)
   }
   
-  // 格式化文件路径，使其更易读
+  // Format file path for readability
   const formatFilePath = (path: string): string => {
     if (!path) return ''
-    // 移除 ~/scripts/ 前缀
+    // Remove ~/scripts/ prefix
     return path.replace(/^~\/scripts\//, '')
   }
 
-  // 格式化路径为 /src/ 开头的格式
+  // Format path to start with /src/
   const formatPathForCopy = (path: string): string => {
     if (!path) return ''
     
-    // 先移除所有相对路径前缀
+    // Remove all relative path prefixes
     let normalized = path
-      .replace(/^\.\.\/\.\.\//g, '') // 移除 ../../ 
-      .replace(/^\.\.\//g, '') // 移除 ../
-      .replace(/^\.\//g, '') // 移除 ./
-      .replace(/^~\/scripts\//, '') // 移除 ~/scripts/
+      .replace(/^\.\.\/\.\.\//g, '')
+      .replace(/^\.\.\//g, '')
+      .replace(/^\.\//g, '')
+      .replace(/^~\/scripts\//, '')
     
-    // 移除开头的所有相对路径（可能有多层）
+    // Remove all leading relative paths (may have multiple layers)
     while (normalized.startsWith('../')) {
       normalized = normalized.substring(3)
     }
     
-    // 查找 src 目录的位置
+    // Find src directory position
     const srcIndex = normalized.indexOf('/src/')
     const srcIndexAlt = normalized.indexOf('src/')
     
     if (srcIndex !== -1) {
-      // 找到 /src/，保留从 /src/ 开始的部分
+      // Found /src/, keep from /src/ onwards
       normalized = normalized.substring(srcIndex)
     } else if (srcIndexAlt !== -1) {
-      // 找到 src/（不带前导斜杠），添加前导斜杠
+      // Found src/ (without leading slash), add leading slash
       normalized = '/' + normalized.substring(srcIndexAlt)
     }
-    // 如果路径中没有 src，就使用清理后的路径，确保以 / 开头
+    // If no src in path, use cleaned path, ensure starts with /
     else if (!normalized.startsWith('/')) {
       normalized = '/' + normalized
     }
@@ -63,7 +63,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
     return normalized
   }
 
-  // 复制到剪贴板
+  // Copy to clipboard
   const copyToClipboard = async (item: ParsedStackFrame, index: number) => {
     try {
       const path = formatPathForCopy(item.source)
@@ -78,14 +78,13 @@ function ErrorStack({ stack }: ErrorStackProps) {
       
       await navigator.clipboard.writeText(textToCopy)
       
-      // 显示复制成功提示
+      // Show copy success indicator
       setCopiedIndex(index)
       setTimeout(() => {
         setCopiedIndex(null)
       }, 2000)
     } catch (error) {
-      console.error('复制失败:', error)
-      // 降级方案：使用传统方法
+      // Fallback: use traditional method
       try {
         const path = formatPathForCopy(item.source)
         const line = item.hasMapping && item.originalLine !== null 
@@ -110,7 +109,6 @@ function ErrorStack({ stack }: ErrorStackProps) {
           setCopiedIndex(null)
         }, 2000)
       } catch (fallbackError) {
-        console.error('降级复制方案也失败:', fallbackError)
       }
     }
   }
@@ -130,7 +128,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                 : 'border-gray-300 hover:border-gray-400 hover:shadow-sm'
             }`}
           >
-            {/* 错误栈行头部 */}
+            {/* Stack frame header */}
             <div
               className={`flex items-start p-3 cursor-pointer transition-colors ${
                 isExpanded ? 'bg-blue-50/50' : ''
@@ -147,7 +145,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                   </span>
                 </div>
                 
-                {/* 文件路径和位置 - 类似浏览器开发者工具 */}
+                {/* File path and location - similar to browser dev tools */}
                 <div className="flex items-start gap-2 min-w-0">
                   <div className="text-sm text-gray-700 font-mono min-w-0 flex-1 break-all">
                     {hasMapping ? (
@@ -178,19 +176,19 @@ function ErrorStack({ stack }: ErrorStackProps) {
                           {item.column}
                         </span>
                         <span className="text-orange-600 text-xs ml-2 italic flex-shrink-0">
-                          (未映射)
+                          (unmapped)
                         </span>
                       </>
                     )}
                   </div>
-                  {/* 复制按钮 */}
+                  {/* Copy button */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       copyToClipboard(item, index)
                     }}
                     className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
-                    title="复制文件路径"
+                    title="Copy file path"
                   >
                     {copiedIndex === index ? (
                       <svg
@@ -225,7 +223,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                 </div>
               </div>
               
-              {/* 展开/收起按钮 */}
+              {/* Expand/collapse button */}
               <button
                 className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
                 onClick={(e) => {
@@ -249,16 +247,16 @@ function ErrorStack({ stack }: ErrorStackProps) {
               </button>
             </div>
 
-            {/* 详细信息（展开时显示） */}
+            {/* Detailed information (shown when expanded) */}
             {isExpanded && (
               <div className="border-t-2 border-blue-200 bg-gradient-to-br from-gray-50 to-blue-50/20">
                 <div className="p-4 space-y-4">
-                  {/* 原始源代码位置 - 主要显示 */}
+                  {/* Original source code location - main display */}
                   {hasMapping ? (
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                          原始源代码位置
+                          Original Source Location
                         </div>
                         <button
                           onClick={(e) => {
@@ -266,7 +264,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                             copyToClipboard(item, index)
                           }}
                           className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-gray-100"
-                          title="复制文件路径"
+                          title="Copy file path"
                         >
                           {copiedIndex === index ? (
                             <>
@@ -283,7 +281,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                                   d="M5 13l4 4L19 7"
                                 />
                               </svg>
-                              <span className="text-green-600">已复制</span>
+                              <span className="text-green-600">Copied</span>
                             </>
                           ) : (
                             <>
@@ -300,7 +298,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                                 />
                               </svg>
-                              <span>复制</span>
+                              <span>Copy</span>
                             </>
                           )}
                         </button>
@@ -312,19 +310,19 @@ function ErrorStack({ stack }: ErrorStackProps) {
                           </span>
                         </div>
                         <div className="px-3 py-2 font-mono text-sm text-gray-800">
-                          <span className="text-gray-500">行 </span>
+                          <span className="text-gray-500">Line </span>
                           <span className="font-semibold text-gray-900">{item.originalLine}</span>
                           <span className="text-gray-500 mx-2">·</span>
-                          <span className="text-gray-500">列 </span>
+                          <span className="text-gray-500">Column </span>
                           <span className="font-semibold text-gray-900">{item.originalColumn || 0}</span>
                         </div>
                       </div>
                       
-                      {/* 编译后位置（辅助信息） */}
+                      {/* Compiled location (auxiliary info) */}
                       {item.originalSource !== item.source && (
                         <div className="mt-3">
                           <div className="text-xs text-gray-500 mb-1">
-                            编译自:
+                            Compiled from:
                           </div>
                           <div className="text-xs text-gray-600 font-mono break-all">
                             {formatFilePath(item.originalSource)}:{item.line}:{item.column}
@@ -333,10 +331,10 @@ function ErrorStack({ stack }: ErrorStackProps) {
                       )}
                     </div>
                   ) : (
-                    /* 未映射的情况 */
+                    /* Unmapped case */
                     <div>
                       <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                        编译后位置
+                        Compiled Location
                       </div>
                       <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
                         <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 break-all">
@@ -345,23 +343,23 @@ function ErrorStack({ stack }: ErrorStackProps) {
                           </span>
                         </div>
                         <div className="px-3 py-2 font-mono text-sm text-gray-800">
-                          <span className="text-gray-500">行 </span>
+                          <span className="text-gray-500">Line </span>
                           <span className="font-semibold text-gray-900">{item.line}</span>
                           <span className="text-gray-500 mx-2">·</span>
-                          <span className="text-gray-500">列 </span>
+                          <span className="text-gray-500">Column </span>
                           <span className="font-semibold text-gray-900">{item.column}</span>
                         </div>
                       </div>
                       <div className="mt-2 text-xs text-orange-600 italic">
-                        ⚠️ 未找到对应的 sourcemap 文件
+                        ⚠️ No matching sourcemap file found
                       </div>
                     </div>
                   )}
 
-                  {/* 函数调用信息 */}
+                  {/* Function call information */}
                   <div>
                     <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                      函数调用
+                      Function Call
                     </div>
                     <div className="bg-white border border-gray-300 rounded-md px-3 py-2">
                       <code className="text-sm text-gray-800 font-mono">
@@ -370,11 +368,11 @@ function ErrorStack({ stack }: ErrorStackProps) {
                     </div>
                   </div>
 
-                  {/* 源代码内容显示 */}
+                  {/* Source code content display */}
                   {hasMapping && item.content && (
                     <div>
                       <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                        源代码内容
+                        Source Code
                       </div>
                       <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
                         <div className="bg-gray-800 px-3 py-2 border-b border-gray-700 flex items-center justify-between">
@@ -382,7 +380,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                             {formatFilePath(item.source)}
                           </span>
                           <span className="text-xs text-gray-500">
-                            行 {item.originalLine}
+                            Line {item.originalLine}
                           </span>
                         </div>
                         <div className="p-4 overflow-x-auto">
@@ -391,7 +389,7 @@ function ErrorStack({ stack }: ErrorStackProps) {
                               {(() => {
                                 const lines = item.content.split('\n')
                                 const targetLine = item.originalLine || 1
-                                // originalLine 是从 1 开始的，转换为数组索引（从 0 开始）
+                                // originalLine is 1-based, convert to array index (0-based)
                                 const targetLineIndex = targetLine - 1
                                 const startLine = Math.max(0, targetLineIndex - 5)
                                 const endLine = Math.min(lines.length, targetLineIndex + 6)

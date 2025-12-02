@@ -10,7 +10,7 @@ interface ErrorMessageProps {
 function ErrorMessage({ message, onClose, autoClose = true, duration = 5000 }: ErrorMessageProps) {
   if (!message) return null
 
-  // 自动关闭功能
+  // Auto-close functionality
   useEffect(() => {
     if (autoClose && onClose && duration > 0) {
       const timer = setTimeout(() => {
@@ -41,7 +41,7 @@ function ErrorMessage({ message, onClose, autoClose = true, duration = 5000 }: E
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
-              <span>解析失败</span>
+              <span>Parse Failed</span>
             </h3>
             <div className="text-sm text-red-700 whitespace-pre-wrap break-words max-h-60 overflow-y-auto bg-white/50 rounded-lg p-2 font-mono text-xs">
               {message}
@@ -51,7 +51,7 @@ function ErrorMessage({ message, onClose, autoClose = true, duration = 5000 }: E
             <button
               onClick={onClose}
               className="flex-shrink-0 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-200 rounded-lg focus:outline-none transition-all duration-200 transform hover:scale-110"
-              aria-label="关闭"
+              aria-label="Close"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

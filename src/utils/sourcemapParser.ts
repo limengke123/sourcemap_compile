@@ -2,7 +2,7 @@ import { SourceMapConsumer } from 'source-map'
 import type { SourceMapFile, StackFrame, ParsedStackFrame } from '../types'
 
 /**
- * 解析 JSON 格式的错误堆栈
+ * Parse JSON format error stack
  */
 function parseJSONStack(errorInfo: string): StackFrame[] | null {
   try {
@@ -38,7 +38,7 @@ function parseJSONStack(errorInfo: string): StackFrame[] | null {
 }
 
 /**
- * 解析文本格式的错误堆栈
+ * Parse text format error stack
  */
 function parseTextStack(errorInfo: string): StackFrame[] | null {
   const lines = errorInfo.split('\n')
@@ -84,23 +84,23 @@ function parseTextStack(errorInfo: string): StackFrame[] | null {
 }
 
 /**
- * 从文件名匹配 sourcemap
+ * Match sourcemap from filename
  */
 function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): SourceMapFile | null {
   if (!filename || !sourceMaps || sourceMaps.length === 0) {
     return null
   }
   
-  // 提取文件名（不含路径和扩展名）
+  // Extract filename (without path and extension)
   const getBaseName = (path: string): string => {
-    // 移除路径前缀
+    // Remove path prefix
     let name = path.replace(/^~\/scripts\//, '')
-    // 获取文件名部分
+    // Get filename part
     const lastSlash = name.lastIndexOf('/')
     if (lastSlash !== -1) {
       name = name.substring(lastSlash + 1)
     }
-    // 移除扩展名
+    // Remove extension
     const lastDot = name.lastIndexOf('.')
     if (lastDot !== -1) {
       name = name.substring(0, lastDot)
@@ -110,14 +110,14 @@ function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): S
   
   const targetBaseName = getBaseName(filename)
   
-  // 遍历所有 sourcemap，找到匹配的
+  // Iterate through all sourcemaps to find match
   for (const map of sourceMaps) {
     if (!map.content) continue
     
     const mapFile = map.content.file || ''
     const mapSources = map.content.sources || []
     
-    // 1. 检查编译后的文件名（精确匹配文件名）
+    // 1. Check compiled filename (exact match)
     if (mapFile) {
       const mapBaseName = getBaseName(mapFile)
       if (mapBaseName === targetBaseName) {
@@ -125,7 +125,7 @@ function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): S
       }
     }
     
-    // 2. 检查 sources 列表（精确匹配文件名）
+    // 2. Check sources list (exact match)
     for (const source of mapSources) {
       const sourceBaseName = getBaseName(source)
       if (sourceBaseName === targetBaseName) {
@@ -138,30 +138,28 @@ function findMatchingSourceMap(filename: string, sourceMaps: SourceMapFile[]): S
 }
 
 /**
- * 使用 sourcemap 解析错误堆栈
+ * Parse error stack using sourcemap
  */
 export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: string): Promise<ParsedStackFrame[]> {
   if (!sourceMaps || sourceMaps.length === 0) {
-    throw new Error('请先上传 sourcemap 文件')
+    throw new Error('Please upload sourcemap files first')
   }
   
   if (!errorInfo || !errorInfo.trim()) {
-    throw new Error('请输入错误信息')
+    throw new Error('Please enter error information')
   }
   
-  // 解析错误堆栈
+  // Parse error stack
   let stackFrames = parseJSONStack(errorInfo)
   if (!stackFrames) {
     stackFrames = parseTextStack(errorInfo)
   }
   
   if (!stackFrames || stackFrames.length === 0) {
-    throw new Error('无法解析错误堆栈。请确保格式正确，例如：\n[{"filename":"file.js","lineno":1,"colno":100}]')
+    throw new Error('Unable to parse error stack. Please ensure the format is correct, e.g.:\n[{"filename":"file.js","lineno":1,"colno":100}]')
   }
   
-  console.log('解析到', stackFrames.length, '个堆栈帧')
-  
-  // 创建 sourcemap consumer 缓存
+  // Create sourcemap consumer cache
   const consumerCache = new Map<any, SourceMapConsumer>()
   
   const getConsumer = async (sourceMapContent: any): Promise<SourceMapConsumer> => {
@@ -177,16 +175,15 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
     })
   }
   
-  // 解析每个堆栈帧
+  // Parse each stack frame
   const results: ParsedStackFrame[] = []
   
   for (const frame of stackFrames) {
     try {
-      // 找到匹配的 sourcemap
+      // Find matching sourcemap
       const matchedMap = findMatchingSourceMap(frame.filename, sourceMaps)
       
       if (!matchedMap) {
-        console.warn('未找到匹配的 sourcemap for:', frame.filename)
         results.push({
           functionName: frame.function || '(anonymous)',
           source: frame.filename,
@@ -201,37 +198,28 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
         continue
       }
       
-      // 获取 consumer
+      // Get consumer
       const consumer = await getConsumer(matchedMap.content)
       
-      // source-map 库：行号从 1 开始，列号从 0 开始
-      // 错误堆栈中的列号通常是从 1 开始的，需要转换为 0-based
+      // source-map library: line numbers start from 1, column numbers start from 0
+      // Column numbers in error stacks usually start from 1, need to convert to 0-based
       const queryLine = Math.max(1, frame.line)
-      const queryColumn = Math.max(0, frame.column - 1) // 转换为 0-based
+      const queryColumn = Math.max(0, frame.column - 1) // Convert to 0-based
       
-      console.log('开始查询:', {
-        filename: frame.filename,
-        originalLine: frame.line,
-        originalColumn: frame.column,
-        queryLine,
-        queryColumn,
-        sourceMapFile: matchedMap.content.file,
-      })
-      
-      // 智能查询策略：尝试多个列号
-      // 因为压缩后的代码可能在同一行有多个映射点，我们需要找到最接近的
+      // Smart query strategy: try multiple column numbers
+      // Because minified code may have multiple mapping points on the same line, we need to find the closest one
       let originalPosition: any = null
       const tryColumns: number[] = []
       
-      // 1. 首先尝试精确的列号
+      // 1. First try exact column number
       tryColumns.push(queryColumn)
       
-      // 2. 如果列号 > 0，尝试列号 0（很多 sourcemap 只在列号 0 有映射）
+      // 2. If column > 0, try column 0 (many sourcemaps only have mappings at column 0)
       if (queryColumn > 0) {
         tryColumns.push(0)
       }
       
-      // 3. 尝试附近的列号（±1, ±2）
+      // 3. Try nearby column numbers (±1, ±2)
       if (queryColumn > 1) {
         tryColumns.push(queryColumn - 1)
       }
@@ -241,45 +229,34 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
       tryColumns.push(queryColumn + 1)
       tryColumns.push(queryColumn + 2)
       
-      // 去重并排序
+      // Deduplicate and sort
       const uniqueColumns = [...new Set(tryColumns)].sort((a, b) => {
-        // 优先尝试接近原始列号的
+        // Prefer columns closer to original column number
         const diffA = Math.abs(a - queryColumn)
         const diffB = Math.abs(b - queryColumn)
         return diffA - diffB
       })
       
-      // 尝试每个列号
+      // Try each column number
       for (const col of uniqueColumns) {
-        if (col < 0) continue // 跳过负数
+        if (col < 0) continue // Skip negative numbers
         
         const testPosition = consumer.originalPositionFor({
           line: queryLine,
           column: col,
         })
         
-        console.log(`尝试列号 ${col}:`, {
-          hasSource: !!testPosition?.source,
-          source: testPosition?.source,
-          line: testPosition?.line,
-          column: testPosition?.column,
-        })
-        
-        // 如果找到了有效的映射，使用它
+        // If found valid mapping, use it
         if (testPosition && testPosition.source) {
           originalPosition = testPosition
-          console.log(`✓ 在列号 ${col} 找到映射`)
           break
         }
       }
       
-      // 如果还是找不到，尝试使用 allGeneratedPositionsFor 查找该行的所有映射点
+      // If still not found, try using column 0
       if (!originalPosition || !originalPosition.source) {
-        console.log('尝试查找该行的所有映射点...')
         try {
-          // 尝试查找该行是否有任何映射
-          // 注意：这个方法需要原始源代码位置，我们反过来用
-          // 先尝试查询该行的第一个和最后一个列号
+          // Try to find any mapping for this line
           const firstCol = consumer.originalPositionFor({
             line: queryLine,
             column: 0,
@@ -287,26 +264,19 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
           
           if (firstCol && firstCol.source) {
             originalPosition = firstCol
-            console.log('使用列号 0 的映射')
           }
         } catch (e) {
-          console.warn('查找映射点时出错:', e)
+          // Ignore errors
         }
       }
       
-      console.log('最终查询结果:', {
-        input: { line: queryLine, column: queryColumn, originalColumn: frame.column },
-        output: originalPosition,
-        found: !!(originalPosition && originalPosition.source),
-      })
-      
       if (originalPosition && originalPosition.source) {
-        // 获取原始源代码内容
+        // Get original source code content
         let sourceContent: string | null = null
         try {
           sourceContent = consumer.sourceContentFor(originalPosition.source)
         } catch (error) {
-          console.warn('无法获取源代码内容:', originalPosition.source, error)
+          // Ignore errors
         }
         
         results.push({
@@ -321,14 +291,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
           content: sourceContent,
         })
       } else {
-        // 找不到映射，保留原始信息
-        console.warn('未找到映射:', {
-          filename: frame.filename,
-          line: frame.line,
-          column: frame.column,
-          queryLine,
-          queryColumn,
-        })
+        // Mapping not found, keep original information
         results.push({
           functionName: frame.function || '(anonymous)',
           source: frame.filename,
@@ -342,8 +305,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
         })
       }
     } catch (error) {
-      console.error('解析堆栈帧失败:', error, frame)
-      // 出错时仍然保留原始信息
+      // On error, still keep original information
       results.push({
         functionName: frame.function || '(anonymous)',
         source: frame.filename,
@@ -359,7 +321,7 @@ export async function parseSourceMap(sourceMaps: SourceMapFile[], errorInfo: str
   }
   
   if (results.length === 0) {
-    throw new Error('未能解析出任何结果')
+    throw new Error('No results parsed')
   }
   
   return results

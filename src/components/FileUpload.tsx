@@ -34,16 +34,15 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
       const items = Array.from(e.dataTransfer.items)
       const files = Array.from(e.dataTransfer.files)
 
-      // 检查是否是 ZIP 文件
+      // Check if it's a ZIP file
       const zipFile = files.find(
         (f) => f.name.endsWith('.zip') || f.type === 'application/zip'
       )
 
       if (zipFile) {
-        // 处理 ZIP 文件
+        // Process ZIP file
         const mapFiles = await extractMapFilesFromZip(zipFile)
         if (mapFiles.length > 0) {
-          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -52,16 +51,15 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             onMultipleFiles(mapFiles)
           }
         } else {
-          alert('ZIP 文件中未找到 .map 文件')
+          alert('No .map files found in ZIP archive')
         }
         return
       }
 
-      // 检查是否是文件夹（通过 items API）
+      // Check if it's a folder (via items API)
       if (items.length > 0 && items[0].webkitGetAsEntry) {
         const mapFiles = await extractMapFilesFromDirectory(items)
         if (mapFiles.length > 0) {
-          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -70,12 +68,12 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             onMultipleFiles(mapFiles)
           }
         } else {
-          alert('文件夹中未找到 .map 文件')
+          alert('No .map files found in folder')
         }
         return
       }
 
-      // 处理单个文件
+      // Process single file
       const mapFile = files.find(
         (f) => f.name.endsWith('.map') || f.type === 'application/json'
       )
@@ -86,10 +84,10 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
           onFileUpload(mapFiles[0])
         }
       } else {
-        alert('请上传 .map 文件、JSON 文件、ZIP 文件或包含 .map 文件的文件夹')
+        alert('Please upload .map files, JSON files, ZIP archives, or folders containing .map files')
       }
     } catch (error) {
-      alert('文件处理失败: ' + (error instanceof Error ? error.message : String(error)))
+      alert('File processing failed: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setIsProcessing(false)
     }
@@ -103,7 +101,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
     try {
       const file = files[0]
 
-      // 检查是否是 ZIP 文件
+      // Check if it's a ZIP file
       if (file.name.endsWith('.zip') || file.type === 'application/zip') {
         const mapFiles = await extractMapFilesFromZip(file)
         if (mapFiles.length > 0) {
@@ -115,10 +113,10 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             onMultipleFiles(mapFiles)
           }
         } else {
-          alert('ZIP 文件中未找到 .map 文件')
+          alert('No .map files found in ZIP archive')
         }
       } else if (files.length > 1 || e.target.hasAttribute('webkitdirectory')) {
-        // 处理文件夹（多个文件）
+        // Process folder (multiple files)
         const mapFiles: SourceMapFile[] = []
         const filePromises = files
           .filter(f => f.name.endsWith('.map') || f.type === 'application/json')
@@ -132,7 +130,6 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
         })
 
         if (mapFiles.length > 0) {
-          console.log(`成功加载 ${mapFiles.length} 个 sourcemap 文件`)
           if (onMultipleFiles) {
             onMultipleFiles(mapFiles)
           } else if (mapFiles.length === 1) {
@@ -141,20 +138,20 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             onMultipleFiles(mapFiles)
           }
         } else {
-          alert('文件夹中未找到 .map 文件')
+          alert('No .map files found in folder')
         }
       } else {
-        // 处理单个文件
+        // Process single file
         const mapFiles = await processSingleFile(file)
         if (mapFiles.length > 0) {
           onFileUpload(mapFiles[0])
         }
       }
     } catch (error) {
-      alert('文件处理失败: ' + (error instanceof Error ? error.message : String(error)))
+      alert('File processing failed: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setIsProcessing(false)
-      // 重置 input，允许重复选择同一文件
+      // Reset input to allow selecting the same file again
       e.target.value = ''
     }
   }, [onFileUpload, onMultipleFiles])
@@ -191,12 +188,12 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
         {isProcessing ? (
           <div className="text-blue-600">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-2"></div>
-            <p className="text-sm font-medium">处理中...</p>
+            <p className="text-sm font-medium">Processing...</p>
           </div>
         ) : (
           <>
             <p className="text-gray-600 mb-3 text-sm">
-              拖拽文件到这里，或
+              Drag files here, or
             </p>
             <div className="flex flex-col gap-2 w-full">
               <label className="cursor-pointer group">
@@ -204,7 +201,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  点击选择文件
+                  Click to select files
                 </span>
                 <input
                   type="file"
@@ -218,7 +215,7 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
-                  或选择文件夹
+                  Or select folder
                 </span>
                 <input
                   type="file"
@@ -231,10 +228,10 @@ function FileUpload({ onFileUpload, onMultipleFiles }: FileUploadProps) {
             </div>
             <div className="mt-3 space-y-0.5">
               <p className="text-xs text-gray-500">
-                支持 <span className="font-medium text-blue-600">.map</span> 文件、<span className="font-medium text-purple-600">ZIP</span> 压缩包或包含 .map 文件的文件夹
+                Supports <span className="font-medium text-blue-600">.map</span> files, <span className="font-medium text-purple-600">ZIP</span> archives, or folders containing .map files
               </p>
               <p className="text-xs text-gray-400">
-                支持上传任意数量的文件（无限制）
+                Supports uploading unlimited number of files
               </p>
             </div>
           </>
