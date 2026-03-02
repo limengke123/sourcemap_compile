@@ -5,6 +5,8 @@ import ErrorStack, { type ErrorStackRef } from './components/ErrorStack'
 import ErrorMessage from './components/ErrorMessage'
 import { parseSourceMap } from './utils/sourcemapParser'
 import type { SourceMapFile, ParsedStackFrame } from './types'
+import type { CachedVersion } from './types/cache'
+import { getMostRecentVersion, updateLastUsed, isIndexedDBAvailable, saveVersion } from './utils/versionCache'
 
 function App() {
   const [sourceMaps, setSourceMaps] = useState<SourceMapFile[]>([])
@@ -19,6 +21,37 @@ function App() {
   const [showExpandTooltip, setShowExpandTooltip] = useState<boolean>(false)
   const [showCollapseTooltip, setShowCollapseTooltip] = useState<boolean>(false)
   const errorStackRef = useRef<ErrorStackRef>(null)
+
+  // Cache-related state
+  const [isLoadingCache, setIsLoadingCache] = useState<boolean>(false)
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null)
+  const [cacheAvailable, setCacheAvailable] = useState<boolean>(isIndexedDBAvailable())
+  const [versionSavedTrigger, setVersionSavedTrigger] = useState<number>(0)
+
+  // Auto-load most recent cached version on startup
+  useEffect(() => {
+    if (!cacheAvailable) return
+
+    const loadCachedVersion = async () => {
+      setIsLoadingCache(true)
+      try {
+        const result = await getMostRecentVersion()
+        if (result.success && result.data) {
+          const version = result.data
+          setSourceMaps(version.files)
+          setCurrentVersionId(version.id)
+          // Update lastUsedAt timestamp
+          await updateLastUsed(version.id)
+        }
+      } catch (error) {
+        console.error('Failed to load cached version:', error)
+      } finally {
+        setIsLoadingCache(false)
+      }
+    }
+
+    loadCachedVersion()
+  }, [cacheAvailable])
 
   // 监听滚动事件，显示/隐藏回到顶部按钮
   useEffect(() => {
@@ -39,17 +72,45 @@ function App() {
     })
   }, [])
 
-  const handleFileUpload = useCallback((file: SourceMapFile) => {
+  const handleFileUpload = useCallback(async (file: SourceMapFile, versionName?: string) => {
     // Single file upload
     setSourceMaps([file])
     setParsedStack(null)
-  }, [])
 
-  const handleMultipleFiles = useCallback((files: SourceMapFile[]) => {
+    // Save to cache if available
+    if (cacheAvailable) {
+      try {
+        const result = await saveVersion([file], versionName)
+        if (result.success) {
+          setCurrentVersionId(result.data.id)
+          setVersionSavedTrigger(prev => prev + 1) // Trigger cache list refresh
+          console.log('Version saved to cache:', result.data.name)
+        }
+      } catch (error) {
+        console.error('Failed to save version to cache:', error)
+      }
+    }
+  }, [cacheAvailable])
+
+  const handleMultipleFiles = useCallback(async (files: SourceMapFile[], versionName?: string) => {
     // Multiple files upload
     setSourceMaps(files)
     setParsedStack(null)
-  }, [])
+
+    // Save to cache if available
+    if (cacheAvailable) {
+      try {
+        const result = await saveVersion(files, versionName)
+        if (result.success) {
+          setCurrentVersionId(result.data.id)
+          setVersionSavedTrigger(prev => prev + 1) // Trigger cache list refresh
+          console.log('Version saved to cache:', result.data.name)
+        }
+      } catch (error) {
+        console.error('Failed to save version to cache:', error)
+      }
+    }
+  }, [cacheAvailable])
 
   const handleRemoveFile = useCallback((index: number) => {
     setSourceMaps(prev => prev.filter((_, i) => i !== index))
@@ -59,6 +120,15 @@ function App() {
   const handleClearAll = useCallback(() => {
     setSourceMaps([])
     setParsedStack(null)
+  }, [])
+
+  // Handle loading version from cache
+  const handleLoadFromCache = useCallback(async (version: CachedVersion) => {
+    setSourceMaps(version.files)
+    setCurrentVersionId(version.id)
+    setParsedStack(null)
+    // Update lastUsedAt timestamp
+    await updateLastUsed(version.id)
   }, [])
 
   // Format path to start with /src/
@@ -199,44 +269,47 @@ function App() {
   }, [sourceMaps, errorInfo])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <ErrorMessage 
-        message={errorMessage} 
-        onClose={() => setErrorMessage(null)} 
+    <div className="min-h-screen bg-gray-50">
+      <ErrorMessage
+        message={errorMessage}
+        onClose={() => setErrorMessage(null)}
       />
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <header className="flex items-center gap-3 mb-6 animate-fade-in">
-          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-md flex items-center justify-center">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <header className="flex items-center gap-4 mb-8 animate-fade-in">
+          <div className="flex-shrink-0 w-14 h-14 bg-blue-600 rounded-2xl shadow-sm flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
               TraceMap
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-500 mt-1">
               Error tracing & source mapping
             </p>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-5 border border-gray-100 animate-slide-up flex flex-col">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md flex items-center justify-center shadow-sm">
-                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 p-8 border border-gray-200 animate-slide-up flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 className="text-xl font-semibold text-gray-900">
                 1. Upload SourceMap Files
               </h2>
             </div>
             <div className="flex-1">
-              <FileUpload 
-                onFileUpload={handleFileUpload} 
+              <FileUpload
+                onFileUpload={handleFileUpload}
                 onMultipleFiles={handleMultipleFiles}
+                onLoadFromCache={handleLoadFromCache}
+                currentVersionId={currentVersionId}
+                onVersionSaved={() => setVersionSavedTrigger(prev => prev + 1)}
               />
             </div>
             {sourceMaps.length > 0 && (
@@ -334,14 +407,14 @@ function App() {
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-5 border border-gray-100 animate-slide-up flex flex-col" style={{ animationDelay: '0.1s' }}>
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-md flex items-center justify-center shadow-sm">
-                <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 p-8 border border-gray-200 animate-slide-up flex flex-col" style={{ animationDelay: '0.1s' }}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 className="text-xl font-semibold text-gray-900">
                 2. Enter Error Information
               </h2>
             </div>
@@ -355,11 +428,11 @@ function App() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 mb-5 border border-gray-100 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-gray-200 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <button
             onClick={handleParse}
             disabled={isProcessing || sourceMaps.length === 0 || !errorInfo.trim()}
-            className="w-full py-3 px-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm"
+            className="w-full py-3 px-5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 text-base"
           >
             {isProcessing ? (
               <>
@@ -381,15 +454,15 @@ function App() {
         </div>
 
         {parsedStack && (
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-200 animate-fade-in">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-xl font-semibold text-gray-900">
                   Parse Results
                 </h2>
               </div>
@@ -512,9 +585,9 @@ function App() {
       {/* Scroll to top button */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center z-50 ${
-          showScrollToTop 
-            ? 'opacity-100 translate-y-0 pointer-events-auto' 
+        className={`fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center z-50 ${
+          showScrollToTop
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
         aria-label="Scroll to top"
